@@ -6,8 +6,8 @@ function App() {
     <main className="app-shell">
       <h1>Academic Registration</h1>
       <p>
-        Frontend TypeScript estruturado. Telas e consumo da API serão implementados
-        nas próximas etapas.
+        Frontend TypeScript estruturado. Telas e consumo da API serão implementados nas próximas
+        etapas.
       </p>
       <HomePage />
     </main>

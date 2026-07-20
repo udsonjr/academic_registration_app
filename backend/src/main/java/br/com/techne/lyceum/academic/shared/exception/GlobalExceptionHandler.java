@@ -24,26 +24,26 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiErrorResponse> handleBusinessException(
-            BusinessException ex,
-            HttpServletRequest request
-    ) {
+            BusinessException ex, HttpServletRequest request) {
         String traceId = newTraceId();
         log.warn("[{}] Business error {}: {}", traceId, ex.getCode(), ex.getMessage());
 
-        return buildResponse(ex.getStatus(), ex.getCode(), ex.getMessage(), request, traceId, List.of());
+        return buildResponse(
+                ex.getStatus(), ex.getCode(), ex.getMessage(), request, traceId, List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiErrorResponse> handleMethodArgumentNotValid(
-            MethodArgumentNotValidException ex,
-            HttpServletRequest request
-    ) {
+            MethodArgumentNotValidException ex, HttpServletRequest request) {
         String traceId = newTraceId();
-        List<ApiErrorResponse.FieldErrorDetail> details = ex.getBindingResult().getFieldErrors().stream()
-                .map(this::toFieldError)
-                .toList();
+        List<ApiErrorResponse.FieldErrorDetail> details =
+                ex.getBindingResult().getFieldErrors().stream().map(this::toFieldError).toList();
 
-        log.warn("[{}] Validation failed on {}: {} field error(s)", traceId, request.getRequestURI(), details.size());
+        log.warn(
+                "[{}] Validation failed on {}: {} field error(s)",
+                traceId,
+                request.getRequestURI(),
+                details.size());
 
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
@@ -51,25 +51,28 @@ public class GlobalExceptionHandler {
                 "One or more fields are invalid",
                 request,
                 traceId,
-                details
-        );
+                details);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiErrorResponse> handleConstraintViolation(
-            ConstraintViolationException ex,
-            HttpServletRequest request
-    ) {
+            ConstraintViolationException ex, HttpServletRequest request) {
         String traceId = newTraceId();
-        List<ApiErrorResponse.FieldErrorDetail> details = ex.getConstraintViolations().stream()
-                .map(violation -> new ApiErrorResponse.FieldErrorDetail(
-                        violation.getPropertyPath().toString(),
-                        violation.getMessage(),
-                        violation.getInvalidValue()
-                ))
-                .toList();
+        List<ApiErrorResponse.FieldErrorDetail> details =
+                ex.getConstraintViolations().stream()
+                        .map(
+                                violation ->
+                                        new ApiErrorResponse.FieldErrorDetail(
+                                                violation.getPropertyPath().toString(),
+                                                violation.getMessage(),
+                                                violation.getInvalidValue()))
+                        .toList();
 
-        log.warn("[{}] Constraint violation on {}: {}", traceId, request.getRequestURI(), ex.getMessage());
+        log.warn(
+                "[{}] Constraint violation on {}: {}",
+                traceId,
+                request.getRequestURI(),
+                ex.getMessage());
 
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
@@ -77,44 +80,44 @@ public class GlobalExceptionHandler {
                 "Request constraints were violated",
                 request,
                 traceId,
-                details
-        );
+                details);
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
-            MethodArgumentTypeMismatchException ex,
-            HttpServletRequest request
-    ) {
+            MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
         String traceId = newTraceId();
-        String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
+        String requiredType =
+                ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
         String message = "Parameter '%s' must be of type %s".formatted(ex.getName(), requiredType);
 
         log.warn("[{}] Type mismatch on {}: {}", traceId, request.getRequestURI(), message);
 
-        return buildResponse(HttpStatus.BAD_REQUEST, "TYPE_MISMATCH", message, request, traceId, List.of());
+        return buildResponse(
+                HttpStatus.BAD_REQUEST, "TYPE_MISMATCH", message, request, traceId, List.of());
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ApiErrorResponse> handleMissingParameter(
-            MissingServletRequestParameterException ex,
-            HttpServletRequest request
-    ) {
+            MissingServletRequestParameterException ex, HttpServletRequest request) {
         String traceId = newTraceId();
         String message = "Required parameter '%s' is missing".formatted(ex.getParameterName());
 
         log.warn("[{}] Missing parameter on {}: {}", traceId, request.getRequestURI(), message);
 
-        return buildResponse(HttpStatus.BAD_REQUEST, "MISSING_PARAMETER", message, request, traceId, List.of());
+        return buildResponse(
+                HttpStatus.BAD_REQUEST, "MISSING_PARAMETER", message, request, traceId, List.of());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiErrorResponse> handleUnreadableMessage(
-            HttpMessageNotReadableException ex,
-            HttpServletRequest request
-    ) {
+            HttpMessageNotReadableException ex, HttpServletRequest request) {
         String traceId = newTraceId();
-        log.warn("[{}] Malformed request body on {}: {}", traceId, request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+        log.warn(
+                "[{}] Malformed request body on {}: {}",
+                traceId,
+                request.getRequestURI(),
+                ex.getMostSpecificCause().getMessage());
 
         return buildResponse(
                 HttpStatus.BAD_REQUEST,
@@ -122,15 +125,12 @@ public class GlobalExceptionHandler {
                 "Request body is missing or malformed",
                 request,
                 traceId,
-                List.of()
-        );
+                List.of());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleUnexpected(
-            Exception ex,
-            HttpServletRequest request
-    ) {
+            Exception ex, HttpServletRequest request) {
         String traceId = newTraceId();
         log.error("[{}] Unexpected error on {}", traceId, request.getRequestURI(), ex);
 
@@ -140,16 +140,14 @@ public class GlobalExceptionHandler {
                 "An unexpected error occurred. Use the traceId to correlate with server logs.",
                 request,
                 traceId,
-                List.of()
-        );
+                List.of());
     }
 
     private ApiErrorResponse.FieldErrorDetail toFieldError(FieldError fieldError) {
         return new ApiErrorResponse.FieldErrorDetail(
                 fieldError.getField(),
                 fieldError.getDefaultMessage(),
-                fieldError.getRejectedValue()
-        );
+                fieldError.getRejectedValue());
     }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(
@@ -158,18 +156,17 @@ public class GlobalExceptionHandler {
             String message,
             HttpServletRequest request,
             String traceId,
-            List<ApiErrorResponse.FieldErrorDetail> details
-    ) {
-        ApiErrorResponse body = new ApiErrorResponse(
-                Instant.now(),
-                status.value(),
-                status.getReasonPhrase(),
-                code,
-                message,
-                request.getRequestURI(),
-                traceId,
-                details
-        );
+            List<ApiErrorResponse.FieldErrorDetail> details) {
+        ApiErrorResponse body =
+                new ApiErrorResponse(
+                        Instant.now(),
+                        status.value(),
+                        status.getReasonPhrase(),
+                        code,
+                        message,
+                        request.getRequestURI(),
+                        traceId,
+                        details);
         return ResponseEntity.status(status).body(body);
     }
 

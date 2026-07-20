@@ -25,20 +25,20 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public List<StudentDTO> getStudents() {
-        return studentRepository.findAll().stream()
-                .map(this::toDto)
-                .toList();
+        return studentRepository.findAll().stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public StudentDTO getStudentByPublicId(UUID publicId) {
-        return studentRepository.findByPublicId(publicId)
+        return studentRepository
+                .findByPublicId(publicId)
                 .map(this::toDto)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "STUDENT_NOT_FOUND",
-                        "Student not found for publicId: " + publicId
-                ));
+                .orElseThrow(
+                        () ->
+                                new ResourceNotFoundException(
+                                        "STUDENT_NOT_FOUND",
+                                        "Student not found for publicId: " + publicId));
     }
 
     @Override
@@ -46,16 +46,12 @@ public class StudentServiceImpl implements StudentService {
     public StudentDTO createStudent(CreateStudentRequest request) {
         if (studentRepository.existsByEmail(request.email())) {
             throw new ConflictException(
-                    "EMAIL_ALREADY_REGISTERED",
-                    "Email already registered: " + request.email()
-            );
+                    "EMAIL_ALREADY_REGISTERED", "Email already registered: " + request.email());
         }
 
         if (!request.password().equals(request.confirmPassword())) {
             throw new BadRequestException(
-                    "PASSWORD_MISMATCH",
-                    "Password and confirm password do not match"
-            );
+                    "PASSWORD_MISMATCH", "Password and confirm password do not match");
         }
 
         Student student = new Student();

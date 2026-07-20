@@ -11,13 +11,7 @@ public record ApiErrorResponse(
         String message,
         String path,
         String traceId,
-        List<FieldErrorDetail> details
-) {
+        List<FieldErrorDetail> details) {
 
-    public record FieldErrorDetail(
-            String field,
-            String message,
-            Object rejectedValue
-    ) {
-    }
+    public record FieldErrorDetail(String field, String message, Object rejectedValue) {}
 }

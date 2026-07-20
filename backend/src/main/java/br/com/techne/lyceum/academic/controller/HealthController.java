@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthController {
 
     @GetMapping(produces = MediaType.TEXT_PLAIN_VALUE)
-    @Operation(summary = "Status do backend", description = "Retorna uma mensagem indicando que a API está no ar")
+    @Operation(
+            summary = "Status do backend",
+            description = "Retorna uma mensagem indicando que a API está no ar")
     public String health() {
         return "Backend funcionando";
     }

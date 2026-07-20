@@ -39,7 +39,9 @@ public class StudentController {
         return studentService.getStudentByPublicId(publicId);
     }
 
-    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Create student", description = "Creates a new student")
     public StudentDTO createStudent(@Valid @RequestBody CreateStudentRequest request) {
