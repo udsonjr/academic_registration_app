@@ -15,13 +15,13 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
-@Table(name = "student")
+@Table(name = "course")
 @SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Student extends SoftDeletableEntity {
+public class Course extends SoftDeletableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,16 +33,19 @@ public class Student extends SoftDeletableEntity {
     @Column(nullable = false, length = 150)
     private String name;
 
-    @Column(nullable = false, length = 255)
-    private String email;
+    @Column(length = 500)
+    private String description;
 
-    @Column(nullable = false, length = 255)
-    private String password;
+    @Column(nullable = false)
+    private Boolean active = true;
 
     @PrePersist
     void generatePublicId() {
         if (publicId == null) {
             publicId = UUID.randomUUID();
+        }
+        if (active == null) {
+            active = true;
         }
     }
 }
