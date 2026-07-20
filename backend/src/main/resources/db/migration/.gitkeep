@@ -1,0 +1,2 @@
+# Flyway migrations serão adicionadas aqui (ex.: V1__create_schema.sql).
+# Convenção: V{versão}__{descricao}.sql

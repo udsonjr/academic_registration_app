@@ -1,0 +1,32 @@
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Backend
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# Env / secrets
+.env
+.env.local
+*.pem
+
+# Build / coverage
+coverage/
+*.lcov
+
+# Documentation
+docs/
