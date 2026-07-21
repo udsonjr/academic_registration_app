@@ -30,6 +30,12 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     private final ClassGroupRepository classGroupRepository;
 
     @Override
+    @Transactional(readOnly = true)
+    public List<EnrollmentDTO> getEnrollments() {
+        return enrollmentRepository.findAll().stream().map(this::toDto).toList();
+    }
+
+    @Override
     @Transactional
     public EnrollmentDTO createEnrollment(CreateEnrollmentRequest request) {
         Student student = studentRepository.getByPublicIdOrThrow(request.studentPublicId());

@@ -3,7 +3,6 @@ package br.com.techne.lyceum.academic.controller;
 import br.com.techne.lyceum.academic.dto.CreateEnrollmentRequest;
 import br.com.techne.lyceum.academic.dto.EnrollmentDTO;
 import br.com.techne.lyceum.academic.service.EnrollmentService;
-import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -33,7 +32,8 @@ public class EnrollmentController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "List enrollments",
-            description = "Returns enrollments filtered by student or by class group")
+            description =
+                    "Returns all enrollments, optionally filtered by student or by class group")
     public List<EnrollmentDTO> getEnrollments(
             @RequestParam(required = false) UUID studentPublicId,
             @RequestParam(required = false) UUID classGroupPublicId) {
@@ -43,9 +43,7 @@ public class EnrollmentController {
         if (classGroupPublicId != null) {
             return enrollmentService.getEnrollmentsByClassGroup(classGroupPublicId);
         }
-        throw new BadRequestException(
-                "MISSING_ENROLLMENT_FILTER",
-                "Either studentPublicId or classGroupPublicId must be provided");
+        return enrollmentService.getEnrollments();
     }
 
     @PostMapping(

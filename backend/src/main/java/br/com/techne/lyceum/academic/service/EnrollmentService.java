@@ -7,6 +7,8 @@ import java.util.UUID;
 
 public interface EnrollmentService {
 
+    List<EnrollmentDTO> getEnrollments();
+
     EnrollmentDTO createEnrollment(CreateEnrollmentRequest request);
 
     EnrollmentDTO confirmEnrollment(UUID publicId);

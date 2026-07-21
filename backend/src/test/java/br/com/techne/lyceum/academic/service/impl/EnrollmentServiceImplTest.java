@@ -90,6 +90,36 @@ class EnrollmentServiceImplTest {
     }
 
     @Test
+    void getEnrollments_whenEnrollmentsExist_returnsMappedDtos() {
+        Student student = mockedStudent();
+        ClassGroup classGroup = mockedClassGroup(10, 40);
+        Enrollment enrollment1 = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment2 = mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
+        enrollment2.setId(2L);
+        enrollment2.setPublicId(UUID.randomUUID());
+        when(enrollmentRepository.findAll()).thenReturn(List.of(enrollment1, enrollment2));
+
+        List<EnrollmentDTO> result = enrollmentService.getEnrollments();
+
+        assertEquals(2, result.size());
+        assertEquals(enrollment1.getPublicId(), result.get(0).publicId());
+        assertEquals(EnrollmentStatus.PENDING, result.get(0).status());
+        assertEquals(enrollment2.getPublicId(), result.get(1).publicId());
+        assertEquals(EnrollmentStatus.CONFIRMED, result.get(1).status());
+        verify(enrollmentRepository).findAll();
+    }
+
+    @Test
+    void getEnrollments_whenEmpty_returnsEmptyList() {
+        when(enrollmentRepository.findAll()).thenReturn(List.of());
+
+        List<EnrollmentDTO> result = enrollmentService.getEnrollments();
+
+        assertTrue(result.isEmpty());
+        verify(enrollmentRepository).findAll();
+    }
+
+    @Test
     void createEnrollment_whenValid_persistsWithPendingStatus() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(0, 40);
