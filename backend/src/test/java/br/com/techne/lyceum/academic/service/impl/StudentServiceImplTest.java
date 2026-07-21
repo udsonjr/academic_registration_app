@@ -80,8 +80,7 @@ class StudentServiceImplTest {
 
     @Test
     void getStudentByPublicId_whenExists_returnsMappedDto() {
-        when(studentRepository.getByPublicIdOrThrow(any(UUID.class)))
-                .thenReturn(mockedStudent());
+        when(studentRepository.getByPublicIdOrThrow(any(UUID.class))).thenReturn(mockedStudent());
 
         UUID publicId = UUID.randomUUID();
         StudentDTO result = studentService.getStudentByPublicId(publicId);
@@ -136,8 +135,7 @@ class StudentServiceImplTest {
     void getStudentByPublicId_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
         when(studentRepository.getByPublicIdOrThrow(publicId))
-                .thenThrow(
-                        new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
+                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -150,8 +148,7 @@ class StudentServiceImplTest {
     @Test
     void updateStudent_whenAllFieldsProvided_updatesAndReturnsDto() {
         Student student = mockedStudent();
-        UpdateStudentRequest request =
-                new UpdateStudentRequest("student2", "student2@example.com");
+        UpdateStudentRequest request = new UpdateStudentRequest("student2", "student2@example.com");
         when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(studentRepository.existsByEmail(request.email())).thenReturn(false);
         when(studentRepository.save(any(Student.class)))
@@ -212,11 +209,9 @@ class StudentServiceImplTest {
     @Test
     void updateStudent_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        UpdateStudentRequest request =
-                new UpdateStudentRequest("student2", "student2@example.com");
+        UpdateStudentRequest request = new UpdateStudentRequest("student2", "student2@example.com");
         when(studentRepository.getByPublicIdOrThrow(publicId))
-                .thenThrow(
-                        new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
+                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -246,8 +241,7 @@ class StudentServiceImplTest {
     void deleteStudent_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
         when(studentRepository.getByPublicIdOrThrow(publicId))
-                .thenThrow(
-                        new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
+                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(

@@ -125,8 +125,7 @@ class EnrollmentServiceImplTest {
 
         ConflictException ex =
                 assertThrows(
-                        ConflictException.class,
-                        () -> enrollmentService.createEnrollment(request));
+                        ConflictException.class, () -> enrollmentService.createEnrollment(request));
 
         assertEquals("CLASS_GROUP_NOT_OPEN", ex.getCode());
         verify(enrollmentRepository, never()).save(any());
@@ -147,8 +146,7 @@ class EnrollmentServiceImplTest {
 
         ConflictException ex =
                 assertThrows(
-                        ConflictException.class,
-                        () -> enrollmentService.createEnrollment(request));
+                        ConflictException.class, () -> enrollmentService.createEnrollment(request));
 
         assertEquals("ENROLLMENT_ALREADY_EXISTS", ex.getCode());
         verify(enrollmentRepository, never()).save(any());
@@ -187,8 +185,7 @@ class EnrollmentServiceImplTest {
         CreateEnrollmentRequest request =
                 new CreateEnrollmentRequest(studentPublicId, UUID.randomUUID());
         when(studentRepository.getByPublicIdOrThrow(studentPublicId))
-                .thenThrow(
-                        new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
+                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -224,8 +221,7 @@ class EnrollmentServiceImplTest {
     void confirmEnrollment_whenPendingAndVacancyAvailable_confirmsAndConsumesVacancy() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
         when(classGroupRepository.save(any(ClassGroup.class)))
@@ -245,8 +241,7 @@ class EnrollmentServiceImplTest {
     void confirmEnrollment_whenClassGroupFull_throwsConflict() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(40, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
 
@@ -265,8 +260,7 @@ class EnrollmentServiceImplTest {
     void confirmEnrollment_whenAlreadyConfirmed_throwsConflict() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
 
@@ -284,8 +278,7 @@ class EnrollmentServiceImplTest {
     void confirmEnrollment_whenCancelled_throwsConflict() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.CANCELLED);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CANCELLED);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
 
@@ -318,8 +311,7 @@ class EnrollmentServiceImplTest {
     void cancelEnrollment_whenPending_cancelsWithoutReleasingVacancy() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
         when(enrollmentRepository.save(any(Enrollment.class)))
@@ -336,8 +328,7 @@ class EnrollmentServiceImplTest {
     void cancelEnrollment_whenConfirmed_cancelsAndReleasesVacancy() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
         when(classGroupRepository.save(any(ClassGroup.class)))
@@ -357,8 +348,7 @@ class EnrollmentServiceImplTest {
     void cancelEnrollment_whenAlreadyCancelled_throwsConflict() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.CANCELLED);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CANCELLED);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
 
@@ -392,8 +382,7 @@ class EnrollmentServiceImplTest {
     void getEnrollmentsByStudent_whenStudentExists_returnsMappedDtos() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
         when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(enrollmentRepository.findAllByStudentId(student.getId()))
                 .thenReturn(List.of(enrollment));
@@ -424,8 +413,7 @@ class EnrollmentServiceImplTest {
     void getEnrollmentsByStudent_whenStudentMissing_throwsNotFound() {
         UUID studentPublicId = UUID.randomUUID();
         when(studentRepository.getByPublicIdOrThrow(studentPublicId))
-                .thenThrow(
-                        new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
+                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -439,8 +427,7 @@ class EnrollmentServiceImplTest {
     void getEnrollmentsByClassGroup_whenClassGroupExists_returnsMappedDtos() {
         Student student = mockedStudent();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment =
-                mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
+        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
         when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
                 .thenReturn(classGroup);
         when(enrollmentRepository.findAllByClassGroupId(classGroup.getId()))

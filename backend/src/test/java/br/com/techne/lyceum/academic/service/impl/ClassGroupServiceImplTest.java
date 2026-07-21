@@ -166,8 +166,7 @@ class ClassGroupServiceImplTest {
         CreateClassGroupRequest request =
                 new CreateClassGroupRequest("Group A", "Morning", subjectPublicId, 40, true);
         when(subjectRepository.getByPublicIdOrThrow(subjectPublicId))
-                .thenThrow(
-                        new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
+                .thenThrow(new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -231,8 +230,7 @@ class ClassGroupServiceImplTest {
     void updateClassGroup_whenVacancyLimitBelowEnrolled_throwsBadRequest() {
         Subject subject = mockedSubject();
         ClassGroup classGroup = mockedClassGroup(1L, "Group A", "Morning", subject, 20, 40, true);
-        UpdateClassGroupRequest request =
-                new UpdateClassGroupRequest(null, null, null, 10, null);
+        UpdateClassGroupRequest request = new UpdateClassGroupRequest(null, null, null, 10, null);
         when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
                 .thenReturn(classGroup);
 

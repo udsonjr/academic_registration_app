@@ -66,8 +66,7 @@ public class StudentServiceImpl implements StudentService {
         if (request.email() != null && !request.email().equals(student.getEmail())) {
             if (studentRepository.existsByEmail(request.email())) {
                 throw new ConflictException(
-                        "EMAIL_ALREADY_REGISTERED",
-                        "Email already registered: " + request.email());
+                        "EMAIL_ALREADY_REGISTERED", "Email already registered: " + request.email());
             }
             student.setEmail(request.email());
         }

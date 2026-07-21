@@ -107,8 +107,7 @@ class SubjectServiceImplTest {
     void getSubjectByPublicId_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
         when(subjectRepository.getByPublicIdOrThrow(publicId))
-                .thenThrow(
-                        new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
+                .thenThrow(new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -162,8 +161,7 @@ class SubjectServiceImplTest {
                 new UpdateSubjectRequest(
                         "Advanced Algorithms", "Advanced", newCourse.getPublicId());
         when(subjectRepository.getByPublicIdOrThrow(subject.getPublicId())).thenReturn(subject);
-        when(courseRepository.getByPublicIdOrThrow(newCourse.getPublicId()))
-                .thenReturn(newCourse);
+        when(courseRepository.getByPublicIdOrThrow(newCourse.getPublicId())).thenReturn(newCourse);
         when(subjectRepository.save(any(Subject.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -196,8 +194,7 @@ class SubjectServiceImplTest {
         UUID publicId = UUID.randomUUID();
         UpdateSubjectRequest request = new UpdateSubjectRequest("Name", "Desc", UUID.randomUUID());
         when(subjectRepository.getByPublicIdOrThrow(publicId))
-                .thenThrow(
-                        new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
+                .thenThrow(new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -246,8 +243,7 @@ class SubjectServiceImplTest {
     void deleteSubject_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
         when(subjectRepository.getByPublicIdOrThrow(publicId))
-                .thenThrow(
-                        new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
+                .thenThrow(new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
