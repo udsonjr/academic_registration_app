@@ -18,7 +18,6 @@ import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,15 +80,14 @@ class StudentServiceImplTest {
 
     @Test
     void getStudentByPublicId_whenExists_returnsMappedDto() {
-        when(studentRepository.findByPublicId(any(UUID.class)))
-                .thenReturn(Optional.of(mockedStudent()));
+        when(studentRepository.getByPublicIdOrThrow(any(UUID.class))).thenReturn(mockedStudent());
 
         UUID publicId = UUID.randomUUID();
         StudentDTO result = studentService.getStudentByPublicId(publicId);
 
         assertEquals("student1", result.name());
         assertEquals("student1@example.com", result.email());
-        verify(studentRepository).findByPublicId(publicId);
+        verify(studentRepository).getByPublicIdOrThrow(publicId);
     }
 
     @Test
@@ -136,7 +134,8 @@ class StudentServiceImplTest {
     @Test
     void getStudentByPublicId_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        when(studentRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(studentRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -149,10 +148,8 @@ class StudentServiceImplTest {
     @Test
     void updateStudent_whenAllFieldsProvided_updatesAndReturnsDto() {
         Student student = mockedStudent();
-        UpdateStudentRequest request =
-                new UpdateStudentRequest("student2", "student2@example.com");
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
+        UpdateStudentRequest request = new UpdateStudentRequest("student2", "student2@example.com");
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(studentRepository.existsByEmail(request.email())).thenReturn(false);
         when(studentRepository.save(any(Student.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -168,8 +165,7 @@ class StudentServiceImplTest {
     void updateStudent_whenPartialFields_updatesOnlyProvidedFields() {
         Student student = mockedStudent();
         UpdateStudentRequest request = new UpdateStudentRequest("student2", null);
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(studentRepository.save(any(Student.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -184,8 +180,7 @@ class StudentServiceImplTest {
     void updateStudent_whenSameEmail_skipsUniquenessCheck() {
         Student student = mockedStudent();
         UpdateStudentRequest request = new UpdateStudentRequest(null, student.getEmail());
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(studentRepository.save(any(Student.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -199,8 +194,7 @@ class StudentServiceImplTest {
     void updateStudent_whenEmailAlreadyRegistered_throwsConflict() {
         Student student = mockedStudent();
         UpdateStudentRequest request = new UpdateStudentRequest(null, "taken@example.com");
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(studentRepository.existsByEmail("taken@example.com")).thenReturn(true);
 
         ConflictException ex =
@@ -215,9 +209,9 @@ class StudentServiceImplTest {
     @Test
     void updateStudent_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        UpdateStudentRequest request =
-                new UpdateStudentRequest("student2", "student2@example.com");
-        when(studentRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        UpdateStudentRequest request = new UpdateStudentRequest("student2", "student2@example.com");
+        when(studentRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -231,8 +225,7 @@ class StudentServiceImplTest {
     @Test
     void deleteStudent_whenExists_softDeletes() {
         Student student = mockedStudent();
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(studentRepository.save(any(Student.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -247,7 +240,8 @@ class StudentServiceImplTest {
     @Test
     void deleteStudent_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        when(studentRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(studentRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
