@@ -5,7 +5,6 @@ import br.com.techne.lyceum.academic.dto.CourseDTO;
 import br.com.techne.lyceum.academic.dto.CreateCourseRequest;
 import br.com.techne.lyceum.academic.dto.UpdateCourseRequest;
 import br.com.techne.lyceum.academic.repository.CourseRepository;
-import br.com.techne.lyceum.academic.repository.SubjectRepository;
 import br.com.techne.lyceum.academic.service.CourseService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
@@ -20,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class CourseServiceImpl implements CourseService {
 
     private final CourseRepository courseRepository;
-    private final SubjectRepository subjectRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -67,12 +65,6 @@ public class CourseServiceImpl implements CourseService {
     @Transactional
     public void deleteCourse(UUID publicId) {
         Course course = findCourseByPublicId(publicId);
-
-        if (subjectRepository.existsByCourseId(course.getId())) {
-            throw new ConflictException(
-                    "COURSE_HAS_SUBJECTS",
-                    "Cannot delete course with associated subjects. publicId: " + publicId);
-        }
 
         course.markAsDeleted();
         courseRepository.save(course);
