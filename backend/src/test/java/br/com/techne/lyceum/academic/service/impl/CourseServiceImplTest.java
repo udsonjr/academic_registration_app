@@ -18,7 +18,6 @@ import br.com.techne.lyceum.academic.repository.SubjectRepository;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,7 +81,7 @@ class CourseServiceImplTest {
     @Test
     void getCourseByPublicId_whenExists_returnsMappedDto() {
         Course course = mockedCourse();
-        when(courseRepository.findByPublicId(course.getPublicId())).thenReturn(Optional.of(course));
+        when(courseRepository.getByPublicIdOrThrow(course.getPublicId())).thenReturn(course);
 
         CourseDTO result = courseService.getCourseByPublicId(course.getPublicId());
 
@@ -90,13 +89,14 @@ class CourseServiceImplTest {
         assertEquals("Computer Science", result.name());
         assertEquals("CS degree", result.description());
         assertEquals(true, result.active());
-        verify(courseRepository).findByPublicId(course.getPublicId());
+        verify(courseRepository).getByPublicIdOrThrow(course.getPublicId());
     }
 
     @Test
     void getCourseByPublicId_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        when(courseRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(courseRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(new ResourceNotFoundException("COURSE_NOT_FOUND", "Course not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -125,7 +125,7 @@ class CourseServiceImplTest {
         Course course = mockedCourse();
         UpdateCourseRequest request =
                 new UpdateCourseRequest("Software Engineering", "SE degree", false);
-        when(courseRepository.findByPublicId(course.getPublicId())).thenReturn(Optional.of(course));
+        when(courseRepository.getByPublicIdOrThrow(course.getPublicId())).thenReturn(course);
         when(courseRepository.save(any(Course.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -141,7 +141,7 @@ class CourseServiceImplTest {
     void updateCourse_whenPartialFields_updatesOnlyProvidedFields() {
         Course course = mockedCourse();
         UpdateCourseRequest request = new UpdateCourseRequest(null, null, false);
-        when(courseRepository.findByPublicId(course.getPublicId())).thenReturn(Optional.of(course));
+        when(courseRepository.getByPublicIdOrThrow(course.getPublicId())).thenReturn(course);
         when(courseRepository.save(any(Course.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -156,7 +156,8 @@ class CourseServiceImplTest {
     void updateCourse_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
         UpdateCourseRequest request = new UpdateCourseRequest("Name", "Desc", true);
-        when(courseRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(courseRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(new ResourceNotFoundException("COURSE_NOT_FOUND", "Course not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -170,7 +171,7 @@ class CourseServiceImplTest {
     @Test
     void deleteCourse_whenExistsWithoutSubjects_softDeletes() {
         Course course = mockedCourse();
-        when(courseRepository.findByPublicId(course.getPublicId())).thenReturn(Optional.of(course));
+        when(courseRepository.getByPublicIdOrThrow(course.getPublicId())).thenReturn(course);
         when(subjectRepository.existsByCourseId(course.getId())).thenReturn(false);
         when(courseRepository.save(any(Course.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -186,7 +187,7 @@ class CourseServiceImplTest {
     @Test
     void deleteCourse_whenHasSubjects_throwsConflict() {
         Course course = mockedCourse();
-        when(courseRepository.findByPublicId(course.getPublicId())).thenReturn(Optional.of(course));
+        when(courseRepository.getByPublicIdOrThrow(course.getPublicId())).thenReturn(course);
         when(subjectRepository.existsByCourseId(course.getId())).thenReturn(true);
 
         ConflictException ex =
@@ -202,7 +203,8 @@ class CourseServiceImplTest {
     @Test
     void deleteCourse_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        when(courseRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(courseRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(new ResourceNotFoundException("COURSE_NOT_FOUND", "Course not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(

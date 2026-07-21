@@ -9,7 +9,6 @@ import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
 import br.com.techne.lyceum.academic.service.ClassGroupService;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
-import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,13 +31,13 @@ public class ClassGroupServiceImpl implements ClassGroupService {
     @Override
     @Transactional(readOnly = true)
     public ClassGroupDTO getClassGroupByPublicId(UUID publicId) {
-        return toDto(findClassGroupByPublicId(publicId));
+        return toDto(classGroupRepository.getByPublicIdOrThrow(publicId));
     }
 
     @Override
     @Transactional
     public ClassGroupDTO createClassGroup(CreateClassGroupRequest request) {
-        Subject subject = findSubjectByPublicId(request.subjectPublicId());
+        Subject subject = subjectRepository.getByPublicIdOrThrow(request.subjectPublicId());
 
         ClassGroup classGroup = new ClassGroup();
         classGroup.setName(request.name());
@@ -54,7 +53,7 @@ public class ClassGroupServiceImpl implements ClassGroupService {
     @Override
     @Transactional
     public ClassGroupDTO updateClassGroup(UUID publicId, UpdateClassGroupRequest request) {
-        ClassGroup classGroup = findClassGroupByPublicId(publicId);
+        ClassGroup classGroup = classGroupRepository.getByPublicIdOrThrow(publicId);
 
         if (request.name() != null) {
             classGroup.setName(request.name());
@@ -63,7 +62,8 @@ public class ClassGroupServiceImpl implements ClassGroupService {
             classGroup.setDescription(request.description());
         }
         if (request.subjectPublicId() != null) {
-            classGroup.setSubject(findSubjectByPublicId(request.subjectPublicId()));
+            classGroup.setSubject(
+                    subjectRepository.getByPublicIdOrThrow(request.subjectPublicId()));
         }
         if (request.vacancyLimit() != null) {
             if (request.vacancyLimit() < classGroup.getEnrolledStudents()) {
@@ -85,29 +85,9 @@ public class ClassGroupServiceImpl implements ClassGroupService {
     @Override
     @Transactional
     public void deleteClassGroup(UUID publicId) {
-        ClassGroup classGroup = findClassGroupByPublicId(publicId);
+        ClassGroup classGroup = classGroupRepository.getByPublicIdOrThrow(publicId);
         classGroup.markAsDeleted();
         classGroupRepository.save(classGroup);
-    }
-
-    private ClassGroup findClassGroupByPublicId(UUID publicId) {
-        return classGroupRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "CLASS_GROUP_NOT_FOUND",
-                                        "Class group not found for publicId: " + publicId));
-    }
-
-    private Subject findSubjectByPublicId(UUID publicId) {
-        return subjectRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "SUBJECT_NOT_FOUND",
-                                        "Subject not found for publicId: " + publicId));
     }
 
     private ClassGroupDTO toDto(ClassGroup classGroup) {

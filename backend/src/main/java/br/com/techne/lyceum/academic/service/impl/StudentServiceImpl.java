@@ -8,7 +8,6 @@ import br.com.techne.lyceum.academic.repository.StudentRepository;
 import br.com.techne.lyceum.academic.service.StudentService;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
-import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +31,7 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public StudentDTO getStudentByPublicId(UUID publicId) {
-        return toDto(findStudentByPublicId(publicId));
+        return toDto(studentRepository.getByPublicIdOrThrow(publicId));
     }
 
     @Override
@@ -59,7 +58,7 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional
     public StudentDTO updateStudent(UUID publicId, UpdateStudentRequest request) {
-        Student student = findStudentByPublicId(publicId);
+        Student student = studentRepository.getByPublicIdOrThrow(publicId);
 
         if (request.name() != null) {
             student.setName(request.name());
@@ -79,19 +78,9 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional
     public void deleteStudent(UUID publicId) {
-        Student student = findStudentByPublicId(publicId);
+        Student student = studentRepository.getByPublicIdOrThrow(publicId);
         student.markAsDeleted();
         studentRepository.save(student);
-    }
-
-    private Student findStudentByPublicId(UUID publicId) {
-        return studentRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "STUDENT_NOT_FOUND",
-                                        "Student not found for publicId: " + publicId));
     }
 
     private StudentDTO toDto(Student student) {

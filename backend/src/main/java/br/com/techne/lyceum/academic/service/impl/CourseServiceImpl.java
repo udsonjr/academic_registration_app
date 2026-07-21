@@ -8,7 +8,6 @@ import br.com.techne.lyceum.academic.repository.CourseRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
 import br.com.techne.lyceum.academic.service.CourseService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
-import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +30,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional(readOnly = true)
     public CourseDTO getCourseByPublicId(UUID publicId) {
-        return toDto(findCourseByPublicId(publicId));
+        return toDto(courseRepository.getByPublicIdOrThrow(publicId));
     }
 
     @Override
@@ -48,7 +47,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional
     public CourseDTO updateCourse(UUID publicId, UpdateCourseRequest request) {
-        Course course = findCourseByPublicId(publicId);
+        Course course = courseRepository.getByPublicIdOrThrow(publicId);
 
         if (request.name() != null) {
             course.setName(request.name());
@@ -66,7 +65,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional
     public void deleteCourse(UUID publicId) {
-        Course course = findCourseByPublicId(publicId);
+        Course course = courseRepository.getByPublicIdOrThrow(publicId);
 
         if (subjectRepository.existsByCourseId(course.getId())) {
             throw new ConflictException(
@@ -76,16 +75,6 @@ public class CourseServiceImpl implements CourseService {
 
         course.markAsDeleted();
         courseRepository.save(course);
-    }
-
-    private Course findCourseByPublicId(UUID publicId) {
-        return courseRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "COURSE_NOT_FOUND",
-                                        "Course not found for publicId: " + publicId));
     }
 
     private CourseDTO toDto(Course course) {

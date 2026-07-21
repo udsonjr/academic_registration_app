@@ -24,7 +24,6 @@ import br.com.techne.lyceum.academic.repository.StudentRepository;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -96,10 +95,9 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(0, 40);
         CreateEnrollmentRequest request =
                 new CreateEnrollmentRequest(student.getPublicId(), classGroup.getPublicId());
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
-        when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
-                .thenReturn(Optional.of(classGroup));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+        when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
+                .thenReturn(classGroup);
         when(enrollmentRepository.existsByStudentIdAndClassGroupIdAndStatusIn(
                         anyLong(), anyLong(), anyCollection()))
                 .thenReturn(false);
@@ -121,10 +119,9 @@ class EnrollmentServiceImplTest {
         classGroup.setOpenForEnrollment(false);
         CreateEnrollmentRequest request =
                 new CreateEnrollmentRequest(student.getPublicId(), classGroup.getPublicId());
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
-        when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
-                .thenReturn(Optional.of(classGroup));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+        when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
+                .thenReturn(classGroup);
 
         ConflictException ex =
                 assertThrows(
@@ -141,10 +138,9 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(0, 40);
         CreateEnrollmentRequest request =
                 new CreateEnrollmentRequest(student.getPublicId(), classGroup.getPublicId());
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
-        when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
-                .thenReturn(Optional.of(classGroup));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+        when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
+                .thenReturn(classGroup);
         when(enrollmentRepository.existsByStudentIdAndClassGroupIdAndStatusIn(
                         anyLong(), anyLong(), anyCollection()))
                 .thenReturn(true);
@@ -164,10 +160,9 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(0, 40);
         CreateEnrollmentRequest request =
                 new CreateEnrollmentRequest(student.getPublicId(), classGroup.getPublicId());
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
-        when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
-                .thenReturn(Optional.of(classGroup));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+        when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
+                .thenReturn(classGroup);
         // Cancelled enrollments are not active, so the duplicate check returns false
         when(enrollmentRepository.existsByStudentIdAndClassGroupIdAndStatusIn(
                         anyLong(), anyLong(), anyCollection()))
@@ -191,7 +186,9 @@ class EnrollmentServiceImplTest {
         UUID studentPublicId = UUID.randomUUID();
         CreateEnrollmentRequest request =
                 new CreateEnrollmentRequest(studentPublicId, UUID.randomUUID());
-        when(studentRepository.findByPublicId(studentPublicId)).thenReturn(Optional.empty());
+        when(studentRepository.getByPublicIdOrThrow(studentPublicId))
+                .thenThrow(
+                        new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -208,10 +205,11 @@ class EnrollmentServiceImplTest {
         UUID classGroupPublicId = UUID.randomUUID();
         CreateEnrollmentRequest request =
                 new CreateEnrollmentRequest(student.getPublicId(), classGroupPublicId);
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
-        when(classGroupRepository.findByPublicId(classGroupPublicId))
-                .thenReturn(Optional.empty());
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+        when(classGroupRepository.getByPublicIdOrThrow(classGroupPublicId))
+                .thenThrow(
+                        new ResourceNotFoundException(
+                                "CLASS_GROUP_NOT_FOUND", "Class group not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -228,8 +226,8 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
-        when(enrollmentRepository.findByPublicId(enrollment.getPublicId()))
-                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
+                .thenReturn(enrollment);
         when(classGroupRepository.save(any(ClassGroup.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(enrollmentRepository.save(any(Enrollment.class)))
@@ -249,8 +247,8 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(40, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
-        when(enrollmentRepository.findByPublicId(enrollment.getPublicId()))
-                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
+                .thenReturn(enrollment);
 
         ConflictException ex =
                 assertThrows(
@@ -269,8 +267,8 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
-        when(enrollmentRepository.findByPublicId(enrollment.getPublicId()))
-                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
+                .thenReturn(enrollment);
 
         ConflictException ex =
                 assertThrows(
@@ -288,8 +286,8 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.CANCELLED);
-        when(enrollmentRepository.findByPublicId(enrollment.getPublicId()))
-                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
+                .thenReturn(enrollment);
 
         ConflictException ex =
                 assertThrows(
@@ -303,7 +301,10 @@ class EnrollmentServiceImplTest {
     @Test
     void confirmEnrollment_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        when(enrollmentRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(enrollmentRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(
+                        new ResourceNotFoundException(
+                                "ENROLLMENT_NOT_FOUND", "Enrollment not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -319,8 +320,8 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
-        when(enrollmentRepository.findByPublicId(enrollment.getPublicId()))
-                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
+                .thenReturn(enrollment);
         when(enrollmentRepository.save(any(Enrollment.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -337,8 +338,8 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
-        when(enrollmentRepository.findByPublicId(enrollment.getPublicId()))
-                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
+                .thenReturn(enrollment);
         when(classGroupRepository.save(any(ClassGroup.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         when(enrollmentRepository.save(any(Enrollment.class)))
@@ -358,8 +359,8 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.CANCELLED);
-        when(enrollmentRepository.findByPublicId(enrollment.getPublicId()))
-                .thenReturn(Optional.of(enrollment));
+        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
+                .thenReturn(enrollment);
 
         ConflictException ex =
                 assertThrows(
@@ -374,7 +375,10 @@ class EnrollmentServiceImplTest {
     @Test
     void cancelEnrollment_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        when(enrollmentRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(enrollmentRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(
+                        new ResourceNotFoundException(
+                                "ENROLLMENT_NOT_FOUND", "Enrollment not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -390,8 +394,7 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(enrollmentRepository.findAllByStudentId(student.getId()))
                 .thenReturn(List.of(enrollment));
 
@@ -408,8 +411,7 @@ class EnrollmentServiceImplTest {
     @Test
     void getEnrollmentsByStudent_whenNoEnrollments_returnsEmptyList() {
         Student student = mockedStudent();
-        when(studentRepository.findByPublicId(student.getPublicId()))
-                .thenReturn(Optional.of(student));
+        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
         when(enrollmentRepository.findAllByStudentId(student.getId())).thenReturn(List.of());
 
         List<EnrollmentDTO> result =
@@ -421,7 +423,9 @@ class EnrollmentServiceImplTest {
     @Test
     void getEnrollmentsByStudent_whenStudentMissing_throwsNotFound() {
         UUID studentPublicId = UUID.randomUUID();
-        when(studentRepository.findByPublicId(studentPublicId)).thenReturn(Optional.empty());
+        when(studentRepository.getByPublicIdOrThrow(studentPublicId))
+                .thenThrow(
+                        new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -437,8 +441,8 @@ class EnrollmentServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment =
                 mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
-        when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
-                .thenReturn(Optional.of(classGroup));
+        when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
+                .thenReturn(classGroup);
         when(enrollmentRepository.findAllByClassGroupId(classGroup.getId()))
                 .thenReturn(List.of(enrollment));
 
@@ -453,8 +457,10 @@ class EnrollmentServiceImplTest {
     @Test
     void getEnrollmentsByClassGroup_whenClassGroupMissing_throwsNotFound() {
         UUID classGroupPublicId = UUID.randomUUID();
-        when(classGroupRepository.findByPublicId(classGroupPublicId))
-                .thenReturn(Optional.empty());
+        when(classGroupRepository.getByPublicIdOrThrow(classGroupPublicId))
+                .thenThrow(
+                        new ResourceNotFoundException(
+                                "CLASS_GROUP_NOT_FOUND", "Class group not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(

@@ -20,7 +20,6 @@ import br.com.techne.lyceum.academic.repository.SubjectRepository;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -95,8 +94,7 @@ class SubjectServiceImplTest {
     void getSubjectByPublicId_whenExists_returnsMappedDto() {
         Course course = mockedCourse();
         Subject subject = mockedSubject(course);
-        when(subjectRepository.findByPublicId(subject.getPublicId()))
-                .thenReturn(Optional.of(subject));
+        when(subjectRepository.getByPublicIdOrThrow(subject.getPublicId())).thenReturn(subject);
 
         SubjectDTO result = subjectService.getSubjectByPublicId(subject.getPublicId());
 
@@ -108,7 +106,9 @@ class SubjectServiceImplTest {
     @Test
     void getSubjectByPublicId_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        when(subjectRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(subjectRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(
+                        new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -124,7 +124,7 @@ class SubjectServiceImplTest {
         Subject subject = mockedSubject(course);
         CreateSubjectRequest request =
                 new CreateSubjectRequest("Algorithms", "Intro to algorithms", course.getPublicId());
-        when(courseRepository.findByPublicId(course.getPublicId())).thenReturn(Optional.of(course));
+        when(courseRepository.getByPublicIdOrThrow(course.getPublicId())).thenReturn(course);
         when(subjectRepository.save(any(Subject.class))).thenReturn(subject);
 
         SubjectDTO result = subjectService.createSubject(request);
@@ -139,7 +139,8 @@ class SubjectServiceImplTest {
         UUID coursePublicId = UUID.randomUUID();
         CreateSubjectRequest request =
                 new CreateSubjectRequest("Algorithms", "Intro", coursePublicId);
-        when(courseRepository.findByPublicId(coursePublicId)).thenReturn(Optional.empty());
+        when(courseRepository.getByPublicIdOrThrow(coursePublicId))
+                .thenThrow(new ResourceNotFoundException("COURSE_NOT_FOUND", "Course not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -160,10 +161,9 @@ class SubjectServiceImplTest {
         UpdateSubjectRequest request =
                 new UpdateSubjectRequest(
                         "Advanced Algorithms", "Advanced", newCourse.getPublicId());
-        when(subjectRepository.findByPublicId(subject.getPublicId()))
-                .thenReturn(Optional.of(subject));
-        when(courseRepository.findByPublicId(newCourse.getPublicId()))
-                .thenReturn(Optional.of(newCourse));
+        when(subjectRepository.getByPublicIdOrThrow(subject.getPublicId())).thenReturn(subject);
+        when(courseRepository.getByPublicIdOrThrow(newCourse.getPublicId()))
+                .thenReturn(newCourse);
         when(subjectRepository.save(any(Subject.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -179,8 +179,7 @@ class SubjectServiceImplTest {
         Course course = mockedCourse();
         Subject subject = mockedSubject(course);
         UpdateSubjectRequest request = new UpdateSubjectRequest("New Name", null, null);
-        when(subjectRepository.findByPublicId(subject.getPublicId()))
-                .thenReturn(Optional.of(subject));
+        when(subjectRepository.getByPublicIdOrThrow(subject.getPublicId())).thenReturn(subject);
         when(subjectRepository.save(any(Subject.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -189,14 +188,16 @@ class SubjectServiceImplTest {
         assertEquals("New Name", result.name());
         assertEquals("Intro to algorithms", result.description());
         assertEquals(course.getPublicId(), result.coursePublicId());
-        verify(courseRepository, never()).findByPublicId(any());
+        verify(courseRepository, never()).getByPublicIdOrThrow(any());
     }
 
     @Test
     void updateSubject_whenSubjectMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
         UpdateSubjectRequest request = new UpdateSubjectRequest("Name", "Desc", UUID.randomUUID());
-        when(subjectRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(subjectRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(
+                        new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
@@ -211,8 +212,7 @@ class SubjectServiceImplTest {
     void deleteSubject_whenExistsWithoutClassGroups_softDeletes() {
         Course course = mockedCourse();
         Subject subject = mockedSubject(course);
-        when(subjectRepository.findByPublicId(subject.getPublicId()))
-                .thenReturn(Optional.of(subject));
+        when(subjectRepository.getByPublicIdOrThrow(subject.getPublicId())).thenReturn(subject);
         when(classGroupRepository.existsBySubjectId(subject.getId())).thenReturn(false);
         when(subjectRepository.save(any(Subject.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -229,8 +229,7 @@ class SubjectServiceImplTest {
     void deleteSubject_whenHasClassGroups_throwsConflict() {
         Course course = mockedCourse();
         Subject subject = mockedSubject(course);
-        when(subjectRepository.findByPublicId(subject.getPublicId()))
-                .thenReturn(Optional.of(subject));
+        when(subjectRepository.getByPublicIdOrThrow(subject.getPublicId())).thenReturn(subject);
         when(classGroupRepository.existsBySubjectId(subject.getId())).thenReturn(true);
 
         ConflictException ex =
@@ -246,7 +245,9 @@ class SubjectServiceImplTest {
     @Test
     void deleteSubject_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
-        when(subjectRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+        when(subjectRepository.getByPublicIdOrThrow(publicId))
+                .thenThrow(
+                        new ResourceNotFoundException("SUBJECT_NOT_FOUND", "Subject not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(

@@ -10,7 +10,6 @@ import br.com.techne.lyceum.academic.repository.CourseRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
 import br.com.techne.lyceum.academic.service.SubjectService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
-import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,13 +33,13 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     @Transactional(readOnly = true)
     public SubjectDTO getSubjectByPublicId(UUID publicId) {
-        return toDto(findSubjectByPublicId(publicId));
+        return toDto(subjectRepository.getByPublicIdOrThrow(publicId));
     }
 
     @Override
     @Transactional
     public SubjectDTO createSubject(CreateSubjectRequest request) {
-        Course course = findCourseByPublicId(request.coursePublicId());
+        Course course = courseRepository.getByPublicIdOrThrow(request.coursePublicId());
 
         Subject subject = new Subject();
         subject.setName(request.name());
@@ -53,7 +52,7 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     @Transactional
     public SubjectDTO updateSubject(UUID publicId, UpdateSubjectRequest request) {
-        Subject subject = findSubjectByPublicId(publicId);
+        Subject subject = subjectRepository.getByPublicIdOrThrow(publicId);
 
         if (request.name() != null) {
             subject.setName(request.name());
@@ -62,7 +61,7 @@ public class SubjectServiceImpl implements SubjectService {
             subject.setDescription(request.description());
         }
         if (request.coursePublicId() != null) {
-            subject.setCourse(findCourseByPublicId(request.coursePublicId()));
+            subject.setCourse(courseRepository.getByPublicIdOrThrow(request.coursePublicId()));
         }
 
         return toDto(subjectRepository.save(subject));
@@ -71,7 +70,7 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     @Transactional
     public void deleteSubject(UUID publicId) {
-        Subject subject = findSubjectByPublicId(publicId);
+        Subject subject = subjectRepository.getByPublicIdOrThrow(publicId);
 
         if (classGroupRepository.existsBySubjectId(subject.getId())) {
             throw new ConflictException(
@@ -81,26 +80,6 @@ public class SubjectServiceImpl implements SubjectService {
 
         subject.markAsDeleted();
         subjectRepository.save(subject);
-    }
-
-    private Subject findSubjectByPublicId(UUID publicId) {
-        return subjectRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "SUBJECT_NOT_FOUND",
-                                        "Subject not found for publicId: " + publicId));
-    }
-
-    private Course findCourseByPublicId(UUID publicId) {
-        return courseRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "COURSE_NOT_FOUND",
-                                        "Course not found for publicId: " + publicId));
     }
 
     private SubjectDTO toDto(Subject subject) {

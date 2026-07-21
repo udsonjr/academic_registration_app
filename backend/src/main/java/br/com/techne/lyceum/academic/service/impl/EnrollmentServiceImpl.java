@@ -11,7 +11,6 @@ import br.com.techne.lyceum.academic.repository.EnrollmentRepository;
 import br.com.techne.lyceum.academic.repository.StudentRepository;
 import br.com.techne.lyceum.academic.service.EnrollmentService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
-import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -33,8 +32,9 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     @Transactional
     public EnrollmentDTO createEnrollment(CreateEnrollmentRequest request) {
-        Student student = findStudentByPublicId(request.studentPublicId());
-        ClassGroup classGroup = findClassGroupByPublicId(request.classGroupPublicId());
+        Student student = studentRepository.getByPublicIdOrThrow(request.studentPublicId());
+        ClassGroup classGroup =
+                classGroupRepository.getByPublicIdOrThrow(request.classGroupPublicId());
 
         if (!classGroup.getOpenForEnrollment()) {
             throw new ConflictException(
@@ -61,7 +61,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     @Transactional
     public EnrollmentDTO confirmEnrollment(UUID publicId) {
-        Enrollment enrollment = findEnrollmentByPublicId(publicId);
+        Enrollment enrollment = enrollmentRepository.getByPublicIdOrThrow(publicId);
 
         if (enrollment.getStatus() != EnrollmentStatus.PENDING) {
             throw new ConflictException(
@@ -88,7 +88,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     @Transactional
     public EnrollmentDTO cancelEnrollment(UUID publicId) {
-        Enrollment enrollment = findEnrollmentByPublicId(publicId);
+        Enrollment enrollment = enrollmentRepository.getByPublicIdOrThrow(publicId);
 
         if (enrollment.getStatus() == EnrollmentStatus.CANCELLED) {
             throw new ConflictException(
@@ -108,7 +108,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     @Transactional(readOnly = true)
     public List<EnrollmentDTO> getEnrollmentsByStudent(UUID studentPublicId) {
-        Student student = findStudentByPublicId(studentPublicId);
+        Student student = studentRepository.getByPublicIdOrThrow(studentPublicId);
         return enrollmentRepository.findAllByStudentId(student.getId()).stream()
                 .map(this::toDto)
                 .toList();
@@ -117,40 +117,10 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     @Transactional(readOnly = true)
     public List<EnrollmentDTO> getEnrollmentsByClassGroup(UUID classGroupPublicId) {
-        ClassGroup classGroup = findClassGroupByPublicId(classGroupPublicId);
+        ClassGroup classGroup = classGroupRepository.getByPublicIdOrThrow(classGroupPublicId);
         return enrollmentRepository.findAllByClassGroupId(classGroup.getId()).stream()
                 .map(this::toDto)
                 .toList();
-    }
-
-    private Enrollment findEnrollmentByPublicId(UUID publicId) {
-        return enrollmentRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "ENROLLMENT_NOT_FOUND",
-                                        "Enrollment not found for publicId: " + publicId));
-    }
-
-    private Student findStudentByPublicId(UUID publicId) {
-        return studentRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "STUDENT_NOT_FOUND",
-                                        "Student not found for publicId: " + publicId));
-    }
-
-    private ClassGroup findClassGroupByPublicId(UUID publicId) {
-        return classGroupRepository
-                .findByPublicId(publicId)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "CLASS_GROUP_NOT_FOUND",
-                                        "Class group not found for publicId: " + publicId));
     }
 
     private EnrollmentDTO toDto(Enrollment enrollment) {
