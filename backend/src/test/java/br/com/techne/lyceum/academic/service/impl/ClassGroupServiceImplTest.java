@@ -184,7 +184,7 @@ class ClassGroupServiceImplTest {
         ClassGroup classGroup = mockedClassGroup(subject);
         UpdateClassGroupRequest request =
                 new UpdateClassGroupRequest(
-                        "Group C", "Night class", newSubject.getPublicId(), 50, false);
+                        "Group C", "Night class", newSubject.getPublicId(), 50, 10, false);
         when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
                 .thenReturn(Optional.of(classGroup));
         when(subjectRepository.findByPublicId(newSubject.getPublicId()))
@@ -199,6 +199,7 @@ class ClassGroupServiceImplTest {
         assertEquals("Night class", result.description());
         assertEquals(newSubject.getPublicId(), result.subjectPublicId());
         assertEquals(50, result.vacancyLimit());
+        assertEquals(10, result.enrolledStudents());
         assertEquals(false, result.openForEnrollment());
     }
 
@@ -207,7 +208,7 @@ class ClassGroupServiceImplTest {
         Subject subject = mockedSubject();
         ClassGroup classGroup = mockedClassGroup(subject);
         UpdateClassGroupRequest request =
-                new UpdateClassGroupRequest(null, null, null, null, false);
+                new UpdateClassGroupRequest(null, null, null, null, null, false);
         when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
                 .thenReturn(Optional.of(classGroup));
         when(classGroupRepository.save(any(ClassGroup.class)))
@@ -228,7 +229,8 @@ class ClassGroupServiceImplTest {
     void updateClassGroup_whenVacancyLimitBelowEnrolled_throwsBadRequest() {
         Subject subject = mockedSubject();
         ClassGroup classGroup = mockedClassGroup(1L, "Group A", "Morning", subject, 20, 40, true);
-        UpdateClassGroupRequest request = new UpdateClassGroupRequest(null, null, null, 10, null);
+        UpdateClassGroupRequest request =
+                new UpdateClassGroupRequest(null, null, null, 10, null, null);
         when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
                 .thenReturn(Optional.of(classGroup));
 
@@ -244,10 +246,49 @@ class ClassGroupServiceImplTest {
     }
 
     @Test
+    void updateClassGroup_whenEnrolledStudentsProvided_updatesEnrolledStudents() {
+        Subject subject = mockedSubject();
+        ClassGroup classGroup = mockedClassGroup(1L, "Group A", "Morning", subject, 5, 40, true);
+        UpdateClassGroupRequest request =
+                new UpdateClassGroupRequest(null, null, null, null, 25, null);
+        when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
+                .thenReturn(Optional.of(classGroup));
+        when(classGroupRepository.save(any(ClassGroup.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ClassGroupDTO result =
+                classGroupService.updateClassGroup(classGroup.getPublicId(), request);
+
+        assertEquals(25, result.enrolledStudents());
+        assertEquals(40, result.vacancyLimit());
+        verify(classGroupRepository).save(classGroup);
+    }
+
+    @Test
+    void updateClassGroup_whenEnrolledStudentsAboveVacancyLimit_throwsBadRequest() {
+        Subject subject = mockedSubject();
+        ClassGroup classGroup = mockedClassGroup(1L, "Group A", "Morning", subject, 5, 40, true);
+        UpdateClassGroupRequest request =
+                new UpdateClassGroupRequest(null, null, null, null, 50, null);
+        when(classGroupRepository.findByPublicId(classGroup.getPublicId()))
+                .thenReturn(Optional.of(classGroup));
+
+        BadRequestException ex =
+                assertThrows(
+                        BadRequestException.class,
+                        () ->
+                                classGroupService.updateClassGroup(
+                                        classGroup.getPublicId(), request));
+
+        assertEquals("ENROLLED_STUDENTS_GREATER_THAN_VACANCY_LIMIT", ex.getCode());
+        verify(classGroupRepository, never()).save(any());
+    }
+
+    @Test
     void updateClassGroup_whenMissing_throwsNotFound() {
         UUID publicId = UUID.randomUUID();
         UpdateClassGroupRequest request =
-                new UpdateClassGroupRequest("Name", "Desc", UUID.randomUUID(), 40, true);
+                new UpdateClassGroupRequest("Name", "Desc", UUID.randomUUID(), 40, 0, true);
         when(classGroupRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
 
         ResourceNotFoundException ex =
