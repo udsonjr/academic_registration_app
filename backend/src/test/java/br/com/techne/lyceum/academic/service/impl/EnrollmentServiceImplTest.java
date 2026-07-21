@@ -136,8 +136,8 @@ class EnrollmentServiceImplTest {
 
         EnrollmentDTO result = enrollmentService.createEnrollment(request);
 
-        assertEquals(student.getPublicId(), result.studentPublicId());
-        assertEquals(classGroup.getPublicId(), result.classGroupPublicId());
+        assertEquals(student.getPublicId(), result.student().publicId());
+        assertEquals(classGroup.getPublicId(), result.classGroup().publicId());
         assertEquals(EnrollmentStatus.PENDING, result.status());
         verify(enrollmentRepository).save(any(Enrollment.class));
     }
@@ -422,8 +422,8 @@ class EnrollmentServiceImplTest {
 
         assertEquals(1, result.size());
         assertEquals(enrollment.getPublicId(), result.get(0).publicId());
-        assertEquals(student.getPublicId(), result.get(0).studentPublicId());
-        assertEquals(classGroup.getPublicId(), result.get(0).classGroupPublicId());
+        assertEquals(student.getPublicId(), result.get(0).student().publicId());
+        assertEquals(classGroup.getPublicId(), result.get(0).classGroup().publicId());
         assertEquals(EnrollmentStatus.PENDING, result.get(0).status());
     }
 

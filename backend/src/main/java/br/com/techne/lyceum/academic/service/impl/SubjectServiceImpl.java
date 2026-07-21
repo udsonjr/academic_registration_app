@@ -27,13 +27,13 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     @Transactional(readOnly = true)
     public List<SubjectDTO> getSubjects() {
-        return subjectRepository.findAll().stream().map(this::toDto).toList();
+        return subjectRepository.findAll().stream().map(SubjectDTO::from).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public SubjectDTO getSubjectByPublicId(UUID publicId) {
-        return toDto(subjectRepository.getByPublicIdOrThrow(publicId));
+        return SubjectDTO.from(subjectRepository.getByPublicIdOrThrow(publicId));
     }
 
     @Override
@@ -46,7 +46,7 @@ public class SubjectServiceImpl implements SubjectService {
         subject.setDescription(request.description());
         subject.setCourse(course);
 
-        return toDto(subjectRepository.save(subject));
+        return SubjectDTO.from(subjectRepository.save(subject));
     }
 
     @Override
@@ -64,7 +64,7 @@ public class SubjectServiceImpl implements SubjectService {
             subject.setCourse(courseRepository.getByPublicIdOrThrow(request.coursePublicId()));
         }
 
-        return toDto(subjectRepository.save(subject));
+        return SubjectDTO.from(subjectRepository.save(subject));
     }
 
     @Override
@@ -80,13 +80,5 @@ public class SubjectServiceImpl implements SubjectService {
 
         subject.markAsDeleted();
         subjectRepository.save(subject);
-    }
-
-    private SubjectDTO toDto(Subject subject) {
-        return new SubjectDTO(
-                subject.getPublicId(),
-                subject.getName(),
-                subject.getDescription(),
-                subject.getCourse().getPublicId());
     }
 }

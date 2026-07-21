@@ -25,13 +25,13 @@ public class ClassGroupServiceImpl implements ClassGroupService {
     @Override
     @Transactional(readOnly = true)
     public List<ClassGroupDTO> getClassGroups() {
-        return classGroupRepository.findAll().stream().map(this::toDto).toList();
+        return classGroupRepository.findAll().stream().map(ClassGroupDTO::from).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public ClassGroupDTO getClassGroupByPublicId(UUID publicId) {
-        return toDto(classGroupRepository.getByPublicIdOrThrow(publicId));
+        return ClassGroupDTO.from(classGroupRepository.getByPublicIdOrThrow(publicId));
     }
 
     @Override
@@ -47,7 +47,7 @@ public class ClassGroupServiceImpl implements ClassGroupService {
         classGroup.setVacancyLimit(request.vacancyLimit());
         classGroup.setOpenForEnrollment(request.openForEnrollment());
 
-        return toDto(classGroupRepository.save(classGroup));
+        return ClassGroupDTO.from(classGroupRepository.save(classGroup));
     }
 
     @Override
@@ -79,7 +79,7 @@ public class ClassGroupServiceImpl implements ClassGroupService {
             classGroup.setOpenForEnrollment(request.openForEnrollment());
         }
 
-        return toDto(classGroupRepository.save(classGroup));
+        return ClassGroupDTO.from(classGroupRepository.save(classGroup));
     }
 
     @Override
@@ -88,16 +88,5 @@ public class ClassGroupServiceImpl implements ClassGroupService {
         ClassGroup classGroup = classGroupRepository.getByPublicIdOrThrow(publicId);
         classGroup.markAsDeleted();
         classGroupRepository.save(classGroup);
-    }
-
-    private ClassGroupDTO toDto(ClassGroup classGroup) {
-        return new ClassGroupDTO(
-                classGroup.getPublicId(),
-                classGroup.getName(),
-                classGroup.getDescription(),
-                classGroup.getSubject().getPublicId(),
-                classGroup.getEnrolledStudents(),
-                classGroup.getVacancyLimit(),
-                classGroup.getOpenForEnrollment());
     }
 }

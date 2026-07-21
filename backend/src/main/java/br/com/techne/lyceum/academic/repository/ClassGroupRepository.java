@@ -5,12 +5,18 @@ import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ClassGroupRepository extends JpaRepository<ClassGroup, Long> {
 
+    @Override
+    @EntityGraph(attributePaths = {"subject", "subject.course"})
+    List<ClassGroup> findAll();
+
+    @EntityGraph(attributePaths = {"subject", "subject.course"})
     Optional<ClassGroup> findByPublicId(UUID publicId);
 
     List<ClassGroup> findBySubjectId(Long subjectId);

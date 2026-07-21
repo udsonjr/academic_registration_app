@@ -32,7 +32,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     @Transactional(readOnly = true)
     public List<EnrollmentDTO> getEnrollments() {
-        return enrollmentRepository.findAll().stream().map(this::toDto).toList();
+        return enrollmentRepository.findAll().stream().map(EnrollmentDTO::from).toList();
     }
 
     @Override
@@ -61,7 +61,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         enrollment.setClassGroup(classGroup);
         enrollment.setStatus(EnrollmentStatus.PENDING);
 
-        return toDto(enrollmentRepository.save(enrollment));
+        return EnrollmentDTO.from(enrollmentRepository.save(enrollment));
     }
 
     @Override
@@ -88,7 +88,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         classGroupRepository.save(classGroup);
 
         enrollment.setStatus(EnrollmentStatus.CONFIRMED);
-        return toDto(enrollmentRepository.save(enrollment));
+        return EnrollmentDTO.from(enrollmentRepository.save(enrollment));
     }
 
     @Override
@@ -108,7 +108,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
         }
 
         enrollment.setStatus(EnrollmentStatus.CANCELLED);
-        return toDto(enrollmentRepository.save(enrollment));
+        return EnrollmentDTO.from(enrollmentRepository.save(enrollment));
     }
 
     @Override
@@ -116,7 +116,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     public List<EnrollmentDTO> getEnrollmentsByStudent(UUID studentPublicId) {
         Student student = studentRepository.getByPublicIdOrThrow(studentPublicId);
         return enrollmentRepository.findAllByStudentId(student.getId()).stream()
-                .map(this::toDto)
+                .map(EnrollmentDTO::from)
                 .toList();
     }
 
@@ -125,15 +125,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     public List<EnrollmentDTO> getEnrollmentsByClassGroup(UUID classGroupPublicId) {
         ClassGroup classGroup = classGroupRepository.getByPublicIdOrThrow(classGroupPublicId);
         return enrollmentRepository.findAllByClassGroupId(classGroup.getId()).stream()
-                .map(this::toDto)
+                .map(EnrollmentDTO::from)
                 .toList();
-    }
-
-    private EnrollmentDTO toDto(Enrollment enrollment) {
-        return new EnrollmentDTO(
-                enrollment.getPublicId(),
-                enrollment.getStudent().getPublicId(),
-                enrollment.getClassGroup().getPublicId(),
-                enrollment.getStatus());
     }
 }

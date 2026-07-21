@@ -25,13 +25,13 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public List<StudentDTO> getStudents() {
-        return studentRepository.findAll().stream().map(this::toDto).toList();
+        return studentRepository.findAll().stream().map(StudentDTO::from).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public StudentDTO getStudentByPublicId(UUID publicId) {
-        return toDto(studentRepository.getByPublicIdOrThrow(publicId));
+        return StudentDTO.from(studentRepository.getByPublicIdOrThrow(publicId));
     }
 
     @Override
@@ -52,7 +52,7 @@ public class StudentServiceImpl implements StudentService {
         student.setEmail(request.email());
         student.setPassword(passwordEncoder.encode(request.password()));
 
-        return toDto(studentRepository.save(student));
+        return StudentDTO.from(studentRepository.save(student));
     }
 
     @Override
@@ -71,7 +71,7 @@ public class StudentServiceImpl implements StudentService {
             student.setEmail(request.email());
         }
 
-        return toDto(studentRepository.save(student));
+        return StudentDTO.from(studentRepository.save(student));
     }
 
     @Override
@@ -80,9 +80,5 @@ public class StudentServiceImpl implements StudentService {
         Student student = studentRepository.getByPublicIdOrThrow(publicId);
         student.markAsDeleted();
         studentRepository.save(student);
-    }
-
-    private StudentDTO toDto(Student student) {
-        return new StudentDTO(student.getPublicId(), student.getName(), student.getEmail());
     }
 }

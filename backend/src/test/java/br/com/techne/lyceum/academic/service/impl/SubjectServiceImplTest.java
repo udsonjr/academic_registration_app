@@ -75,7 +75,7 @@ class SubjectServiceImplTest {
         assertEquals(2, result.size());
         assertEquals(subject1.getPublicId(), result.get(0).publicId());
         assertEquals("Algorithms", result.get(0).name());
-        assertEquals(course.getPublicId(), result.get(0).coursePublicId());
+        assertEquals(course.getPublicId(), result.get(0).course().publicId());
         assertEquals("Databases", result.get(1).name());
         verify(subjectRepository).findAll();
     }
@@ -100,7 +100,7 @@ class SubjectServiceImplTest {
 
         assertEquals(subject.getPublicId(), result.publicId());
         assertEquals("Algorithms", result.name());
-        assertEquals(course.getPublicId(), result.coursePublicId());
+        assertEquals(course.getPublicId(), result.course().publicId());
     }
 
     @Test
@@ -129,7 +129,7 @@ class SubjectServiceImplTest {
         SubjectDTO result = subjectService.createSubject(request);
 
         assertEquals("Algorithms", result.name());
-        assertEquals(course.getPublicId(), result.coursePublicId());
+        assertEquals(course.getPublicId(), result.course().publicId());
         verify(subjectRepository).save(any(Subject.class));
     }
 
@@ -169,7 +169,7 @@ class SubjectServiceImplTest {
 
         assertEquals("Advanced Algorithms", result.name());
         assertEquals("Advanced", result.description());
-        assertEquals(newCourse.getPublicId(), result.coursePublicId());
+        assertEquals(newCourse.getPublicId(), result.course().publicId());
     }
 
     @Test
@@ -185,7 +185,7 @@ class SubjectServiceImplTest {
 
         assertEquals("New Name", result.name());
         assertEquals("Intro to algorithms", result.description());
-        assertEquals(course.getPublicId(), result.coursePublicId());
+        assertEquals(course.getPublicId(), result.course().publicId());
         verify(courseRepository, never()).getByPublicIdOrThrow(any());
     }
 

@@ -89,7 +89,7 @@ class ClassGroupServiceImplTest {
         assertEquals(2, result.size());
         assertEquals(group1.getPublicId(), result.get(0).publicId());
         assertEquals("Group A", result.get(0).name());
-        assertEquals(subject.getPublicId(), result.get(0).subjectPublicId());
+        assertEquals(subject.getPublicId(), result.get(0).subject().publicId());
         assertEquals(0, result.get(0).enrolledStudents());
         assertEquals(40, result.get(0).vacancyLimit());
         assertEquals(true, result.get(0).openForEnrollment());
@@ -120,7 +120,7 @@ class ClassGroupServiceImplTest {
 
         assertEquals(classGroup.getPublicId(), result.publicId());
         assertEquals("Group A", result.name());
-        assertEquals(subject.getPublicId(), result.subjectPublicId());
+        assertEquals(subject.getPublicId(), result.subject().publicId());
         assertEquals(40, result.vacancyLimit());
     }
 
@@ -156,7 +156,7 @@ class ClassGroupServiceImplTest {
         assertEquals(0, result.enrolledStudents());
         assertEquals(40, result.vacancyLimit());
         assertEquals(true, result.openForEnrollment());
-        assertEquals(subject.getPublicId(), result.subjectPublicId());
+        assertEquals(subject.getPublicId(), result.subject().publicId());
         verify(classGroupRepository).save(any(ClassGroup.class));
     }
 
@@ -199,7 +199,7 @@ class ClassGroupServiceImplTest {
 
         assertEquals("Group C", result.name());
         assertEquals("Night class", result.description());
-        assertEquals(newSubject.getPublicId(), result.subjectPublicId());
+        assertEquals(newSubject.getPublicId(), result.subject().publicId());
         assertEquals(50, result.vacancyLimit());
         assertEquals(false, result.openForEnrollment());
     }
@@ -220,7 +220,7 @@ class ClassGroupServiceImplTest {
 
         assertEquals("Group A", result.name());
         assertEquals("Morning class", result.description());
-        assertEquals(subject.getPublicId(), result.subjectPublicId());
+        assertEquals(subject.getPublicId(), result.subject().publicId());
         assertEquals(40, result.vacancyLimit());
         assertEquals(false, result.openForEnrollment());
         verify(subjectRepository, never()).getByPublicIdOrThrow(any());

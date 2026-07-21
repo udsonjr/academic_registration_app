@@ -24,13 +24,13 @@ public class CourseServiceImpl implements CourseService {
     @Override
     @Transactional(readOnly = true)
     public List<CourseDTO> getCourses() {
-        return courseRepository.findAll().stream().map(this::toDto).toList();
+        return courseRepository.findAll().stream().map(CourseDTO::from).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
     public CourseDTO getCourseByPublicId(UUID publicId) {
-        return toDto(courseRepository.getByPublicIdOrThrow(publicId));
+        return CourseDTO.from(courseRepository.getByPublicIdOrThrow(publicId));
     }
 
     @Override
@@ -41,7 +41,7 @@ public class CourseServiceImpl implements CourseService {
         course.setDescription(request.description());
         course.setActive(request.active());
 
-        return toDto(courseRepository.save(course));
+        return CourseDTO.from(courseRepository.save(course));
     }
 
     @Override
@@ -59,7 +59,7 @@ public class CourseServiceImpl implements CourseService {
             course.setActive(request.active());
         }
 
-        return toDto(courseRepository.save(course));
+        return CourseDTO.from(courseRepository.save(course));
     }
 
     @Override
@@ -75,13 +75,5 @@ public class CourseServiceImpl implements CourseService {
 
         course.markAsDeleted();
         courseRepository.save(course);
-    }
-
-    private CourseDTO toDto(Course course) {
-        return new CourseDTO(
-                course.getPublicId(),
-                course.getName(),
-                course.getDescription(),
-                course.getActive());
     }
 }

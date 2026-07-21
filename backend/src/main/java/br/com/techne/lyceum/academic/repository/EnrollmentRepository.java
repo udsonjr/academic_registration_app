@@ -7,19 +7,51 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
+    @Override
+    @EntityGraph(
+            attributePaths = {
+                "student",
+                "classGroup",
+                "classGroup.subject",
+                "classGroup.subject.course"
+            })
+    List<Enrollment> findAll();
+
+    @EntityGraph(
+            attributePaths = {
+                "student",
+                "classGroup",
+                "classGroup.subject",
+                "classGroup.subject.course"
+            })
     Optional<Enrollment> findByPublicId(UUID publicId);
 
     boolean existsByStudentIdAndClassGroupIdAndStatusIn(
             Long studentId, Long classGroupId, Collection<EnrollmentStatus> statuses);
 
+    @EntityGraph(
+            attributePaths = {
+                "student",
+                "classGroup",
+                "classGroup.subject",
+                "classGroup.subject.course"
+            })
     List<Enrollment> findAllByStudentId(Long studentId);
 
+    @EntityGraph(
+            attributePaths = {
+                "student",
+                "classGroup",
+                "classGroup.subject",
+                "classGroup.subject.course"
+            })
     List<Enrollment> findAllByClassGroupId(Long classGroupId);
 
     default Enrollment getByPublicIdOrThrow(UUID publicId) {
