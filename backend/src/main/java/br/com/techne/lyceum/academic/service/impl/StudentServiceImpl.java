@@ -3,6 +3,7 @@ package br.com.techne.lyceum.academic.service.impl;
 import br.com.techne.lyceum.academic.domain.Student;
 import br.com.techne.lyceum.academic.dto.CreateStudentRequest;
 import br.com.techne.lyceum.academic.dto.StudentDTO;
+import br.com.techne.lyceum.academic.dto.UpdateStudentRequest;
 import br.com.techne.lyceum.academic.repository.StudentRepository;
 import br.com.techne.lyceum.academic.service.StudentService;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
@@ -31,14 +32,7 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public StudentDTO getStudentByPublicId(UUID publicId) {
-        return studentRepository
-                .findByPublicId(publicId)
-                .map(this::toDto)
-                .orElseThrow(
-                        () ->
-                                new ResourceNotFoundException(
-                                        "STUDENT_NOT_FOUND",
-                                        "Student not found for publicId: " + publicId));
+        return toDto(findStudentByPublicId(publicId));
     }
 
     @Override
@@ -60,6 +54,44 @@ public class StudentServiceImpl implements StudentService {
         student.setPassword(passwordEncoder.encode(request.password()));
 
         return toDto(studentRepository.save(student));
+    }
+
+    @Override
+    @Transactional
+    public StudentDTO updateStudent(UUID publicId, UpdateStudentRequest request) {
+        Student student = findStudentByPublicId(publicId);
+
+        if (request.name() != null) {
+            student.setName(request.name());
+        }
+        if (request.email() != null && !request.email().equals(student.getEmail())) {
+            if (studentRepository.existsByEmail(request.email())) {
+                throw new ConflictException(
+                        "EMAIL_ALREADY_REGISTERED",
+                        "Email already registered: " + request.email());
+            }
+            student.setEmail(request.email());
+        }
+
+        return toDto(studentRepository.save(student));
+    }
+
+    @Override
+    @Transactional
+    public void deleteStudent(UUID publicId) {
+        Student student = findStudentByPublicId(publicId);
+        student.markAsDeleted();
+        studentRepository.save(student);
+    }
+
+    private Student findStudentByPublicId(UUID publicId) {
+        return studentRepository
+                .findByPublicId(publicId)
+                .orElseThrow(
+                        () ->
+                                new ResourceNotFoundException(
+                                        "STUDENT_NOT_FOUND",
+                                        "Student not found for publicId: " + publicId));
     }
 
     private StudentDTO toDto(Student student) {

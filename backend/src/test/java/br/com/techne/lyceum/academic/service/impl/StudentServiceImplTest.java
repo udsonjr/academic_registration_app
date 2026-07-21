@@ -1,6 +1,7 @@
 package br.com.techne.lyceum.academic.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.when;
 import br.com.techne.lyceum.academic.domain.Student;
 import br.com.techne.lyceum.academic.dto.CreateStudentRequest;
 import br.com.techne.lyceum.academic.dto.StudentDTO;
+import br.com.techne.lyceum.academic.dto.UpdateStudentRequest;
 import br.com.techne.lyceum.academic.repository.StudentRepository;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
@@ -20,6 +22,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -141,5 +144,118 @@ class StudentServiceImplTest {
                         () -> studentService.getStudentByPublicId(publicId));
 
         assertEquals("STUDENT_NOT_FOUND", ex.getCode());
+    }
+
+    @Test
+    void updateStudent_whenAllFieldsProvided_updatesAndReturnsDto() {
+        Student student = mockedStudent();
+        UpdateStudentRequest request =
+                new UpdateStudentRequest("student2", "student2@example.com");
+        when(studentRepository.findByPublicId(student.getPublicId()))
+                .thenReturn(Optional.of(student));
+        when(studentRepository.existsByEmail(request.email())).thenReturn(false);
+        when(studentRepository.save(any(Student.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        StudentDTO result = studentService.updateStudent(student.getPublicId(), request);
+
+        assertEquals("student2", result.name());
+        assertEquals("student2@example.com", result.email());
+        verify(studentRepository).save(student);
+    }
+
+    @Test
+    void updateStudent_whenPartialFields_updatesOnlyProvidedFields() {
+        Student student = mockedStudent();
+        UpdateStudentRequest request = new UpdateStudentRequest("student2", null);
+        when(studentRepository.findByPublicId(student.getPublicId()))
+                .thenReturn(Optional.of(student));
+        when(studentRepository.save(any(Student.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        StudentDTO result = studentService.updateStudent(student.getPublicId(), request);
+
+        assertEquals("student2", result.name());
+        assertEquals("student1@example.com", result.email());
+        verify(studentRepository, never()).existsByEmail(any());
+    }
+
+    @Test
+    void updateStudent_whenSameEmail_skipsUniquenessCheck() {
+        Student student = mockedStudent();
+        UpdateStudentRequest request = new UpdateStudentRequest(null, student.getEmail());
+        when(studentRepository.findByPublicId(student.getPublicId()))
+                .thenReturn(Optional.of(student));
+        when(studentRepository.save(any(Student.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        StudentDTO result = studentService.updateStudent(student.getPublicId(), request);
+
+        assertEquals("student1@example.com", result.email());
+        verify(studentRepository, never()).existsByEmail(any());
+    }
+
+    @Test
+    void updateStudent_whenEmailAlreadyRegistered_throwsConflict() {
+        Student student = mockedStudent();
+        UpdateStudentRequest request = new UpdateStudentRequest(null, "taken@example.com");
+        when(studentRepository.findByPublicId(student.getPublicId()))
+                .thenReturn(Optional.of(student));
+        when(studentRepository.existsByEmail("taken@example.com")).thenReturn(true);
+
+        ConflictException ex =
+                assertThrows(
+                        ConflictException.class,
+                        () -> studentService.updateStudent(student.getPublicId(), request));
+
+        assertEquals("EMAIL_ALREADY_REGISTERED", ex.getCode());
+        verify(studentRepository, never()).save(any());
+    }
+
+    @Test
+    void updateStudent_whenMissing_throwsNotFound() {
+        UUID publicId = UUID.randomUUID();
+        UpdateStudentRequest request =
+                new UpdateStudentRequest("student2", "student2@example.com");
+        when(studentRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException ex =
+                assertThrows(
+                        ResourceNotFoundException.class,
+                        () -> studentService.updateStudent(publicId, request));
+
+        assertEquals("STUDENT_NOT_FOUND", ex.getCode());
+        verify(studentRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteStudent_whenExists_softDeletes() {
+        Student student = mockedStudent();
+        when(studentRepository.findByPublicId(student.getPublicId()))
+                .thenReturn(Optional.of(student));
+        when(studentRepository.save(any(Student.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        studentService.deleteStudent(student.getPublicId());
+
+        ArgumentCaptor<Student> captor = ArgumentCaptor.forClass(Student.class);
+        verify(studentRepository).save(captor.capture());
+        verify(studentRepository, never()).delete(any());
+        assertNotNull(captor.getValue().getDeletedAt());
+    }
+
+    @Test
+    void deleteStudent_whenMissing_throwsNotFound() {
+        UUID publicId = UUID.randomUUID();
+        when(studentRepository.findByPublicId(publicId)).thenReturn(Optional.empty());
+
+        ResourceNotFoundException ex =
+                assertThrows(
+                        ResourceNotFoundException.class,
+                        () -> studentService.deleteStudent(publicId));
+
+        assertEquals("STUDENT_NOT_FOUND", ex.getCode());
+        verify(studentRepository, never()).save(any());
+        verify(studentRepository, never()).delete(any());
     }
 }
