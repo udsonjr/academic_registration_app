@@ -9,4 +9,5 @@ public record UpdateClassGroupRequest(
         @Size(max = 500) String description,
         UUID subjectPublicId,
         @Min(1) Integer vacancyLimit,
+        Integer enrolledStudents,
         Boolean openForEnrollment) {}

@@ -75,6 +75,14 @@ public class ClassGroupServiceImpl implements ClassGroupService {
             }
             classGroup.setVacancyLimit(request.vacancyLimit());
         }
+        if (request.enrolledStudents() != null) {
+            if (request.enrolledStudents() > classGroup.getVacancyLimit()) {
+                throw new BadRequestException(
+                        "ENROLLED_STUDENTS_GREATER_THAN_VACANCY_LIMIT",
+                        "Enrolled students cannot be greater than vacancy limit");
+            }
+            classGroup.setEnrolledStudents(request.enrolledStudents());
+        }
         if (request.openForEnrollment() != null) {
             classGroup.setOpenForEnrollment(request.openForEnrollment());
         }
