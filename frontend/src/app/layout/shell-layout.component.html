@@ -8,7 +8,6 @@
           <small>{{ current.role === 'ADMIN' ? 'Administrador' : 'Aluno' }}</small>
         </div>
       }
-      
     </div>
 
     <nav class="sidebar-nav">
@@ -18,26 +17,15 @@
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
         >
-          {{ item.label }}
+          <lucide-icon class="nav-icon" [img]="item.icon" [size]="16" [strokeWidth]="2"></lucide-icon>
+          <span>{{ item.label }}</span>
         </a>
       }
     </nav>
 
     <div class="sidebar-footer">
       <button type="button" class="logout-btn" (click)="logout()">
-        <svg
-          class="logout-icon"
-          viewBox="0 0 24 24"
-          width="16"
-          height="16"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <path
-            fill="currentColor"
-            d="M10 3a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V5H6a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3v-2a1 1 0 1 1 2 0v3a1 1 0 0 1-1 1H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h4Zm5.3 4.3a1 1 0 0 1 1.4 0l4 4a1 1 0 0 1 0 1.4l-4 4a1 1 0 1 1-1.4-1.4L17.58 13H11a1 1 0 1 1 0-2h6.58l-2.28-2.3a1 1 0 0 1 0-1.4Z"
-          />
-        </svg>
+        <lucide-icon class="logout-icon" [img]="logOutIcon" [size]="16" [strokeWidth]="2"></lucide-icon>
         Sair
       </button>
     </div>
