@@ -3,7 +3,7 @@ package br.com.techne.lyceum.academic.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,9 +13,9 @@ import br.com.techne.lyceum.academic.dto.AuthResponse;
 import br.com.techne.lyceum.academic.dto.LoginRequest;
 import br.com.techne.lyceum.academic.dto.RegisterRequest;
 import br.com.techne.lyceum.academic.dto.UserDTO;
-import br.com.techne.lyceum.academic.repository.UserRepository;
 import br.com.techne.lyceum.academic.security.JwtService;
 import br.com.techne.lyceum.academic.security.UserPrincipal;
+import br.com.techne.lyceum.academic.service.UserService;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import java.util.Base64;
@@ -27,13 +27,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
 
-    @Mock private UserRepository userRepository;
-    @Mock private PasswordEncoder passwordEncoder;
+    @Mock private UserService userService;
     @Mock private AuthenticationManager authenticationManager;
 
     private JwtService jwtService;
@@ -46,51 +44,59 @@ class AuthServiceImplTest {
                         .encodeToString(
                                 "thisisasecretkeyforjwtsigningatleast256bits".getBytes());
         jwtService = new JwtService(secret, 86400000L);
-        authService =
-                new AuthServiceImpl(
-                        userRepository, passwordEncoder, authenticationManager, jwtService);
+        authService = new AuthServiceImpl(userService, authenticationManager, jwtService);
     }
 
     @Test
-    void register_whenValid_createsStudent() {
+    void register_whenValid_delegatesToUserServiceAsStudent() {
         RegisterRequest request =
                 new RegisterRequest("student1", "student1@example.com", "secret1", "secret1");
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
-        when(passwordEncoder.encode("secret1")).thenReturn("encoded");
-        when(userRepository.save(any(User.class)))
-                .thenAnswer(
-                        invocation -> {
-                            User saved = invocation.getArgument(0);
-                            saved.setId(1L);
-                            saved.setPublicId(UUID.randomUUID());
-                            return saved;
-                        });
+        UUID publicId = UUID.randomUUID();
+        when(userService.createUser(
+                        eq("student1"),
+                        eq("student1@example.com"),
+                        eq("secret1"),
+                        eq("secret1"),
+                        eq(UserRole.STUDENT)))
+                .thenReturn(
+                        new UserDTO(publicId, "student1", "student1@example.com", UserRole.STUDENT));
 
         UserDTO result = authService.register(request);
 
         assertEquals("student1", result.name());
         assertEquals(UserRole.STUDENT, result.role());
-        verify(userRepository).save(any(User.class));
+        verify(userService)
+                .createUser(
+                        "student1",
+                        "student1@example.com",
+                        "secret1",
+                        "secret1",
+                        UserRole.STUDENT);
     }
 
     @Test
-    void register_whenEmailExists_throwsConflict() {
+    void register_whenEmailExists_propagatesConflict() {
         RegisterRequest request =
                 new RegisterRequest("student1", "student1@example.com", "secret1", "secret1");
-        when(userRepository.existsByEmail(request.email())).thenReturn(true);
+        when(userService.createUser(
+                        any(), any(), any(), any(), eq(UserRole.STUDENT)))
+                .thenThrow(
+                        new ConflictException(
+                                "EMAIL_ALREADY_REGISTERED", "Email already registered"));
 
         ConflictException ex =
                 assertThrows(ConflictException.class, () -> authService.register(request));
 
         assertEquals("EMAIL_ALREADY_REGISTERED", ex.getCode());
-        verify(userRepository, never()).save(any());
     }
 
     @Test
-    void register_whenPasswordMismatch_throwsBadRequest() {
+    void register_whenPasswordMismatch_propagatesBadRequest() {
         RegisterRequest request =
                 new RegisterRequest("student1", "student1@example.com", "secret1", "secret2");
-        when(userRepository.existsByEmail(request.email())).thenReturn(false);
+        when(userService.createUser(
+                        any(), any(), any(), any(), eq(UserRole.STUDENT)))
+                .thenThrow(new BadRequestException("PASSWORD_MISMATCH", "Password mismatch"));
 
         BadRequestException ex =
                 assertThrows(BadRequestException.class, () -> authService.register(request));

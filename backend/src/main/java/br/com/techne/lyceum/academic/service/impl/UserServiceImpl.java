@@ -42,22 +42,33 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDTO createUser(CreateUserRequest request) {
         SecurityUtils.requireAdmin();
+        return createUser(
+                request.name(),
+                request.email(),
+                request.password(),
+                request.confirmPassword(),
+                request.role() != null ? request.role() : UserRole.STUDENT);
+    }
 
-        if (userRepository.existsByEmail(request.email())) {
+    @Override
+    @Transactional
+    public UserDTO createUser(
+            String name, String email, String password, String confirmPassword, UserRole role) {
+        if (userRepository.existsByEmail(email)) {
             throw new ConflictException(
-                    "EMAIL_ALREADY_REGISTERED", "Email already registered: " + request.email());
+                    "EMAIL_ALREADY_REGISTERED", "Email already registered: " + email);
         }
 
-        if (!request.password().equals(request.confirmPassword())) {
+        if (!password.equals(confirmPassword)) {
             throw new BadRequestException(
                     "PASSWORD_MISMATCH", "Password and confirm password do not match");
         }
 
         User user = new User();
-        user.setName(request.name());
-        user.setEmail(request.email());
-        user.setPassword(passwordEncoder.encode(request.password()));
-        user.setRole(request.role() != null ? request.role() : UserRole.STUDENT);
+        user.setName(name);
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole(role != null ? role : UserRole.STUDENT);
 
         return UserDTO.from(userRepository.save(user));
     }
