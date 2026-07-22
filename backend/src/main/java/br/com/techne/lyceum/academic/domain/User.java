@@ -2,6 +2,8 @@ package br.com.techne.lyceum.academic.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,13 +17,13 @@ import lombok.Setter;
 import org.hibernate.annotations.SQLRestriction;
 
 @Entity
-@Table(name = "student")
+@Table(name = "users")
 @SQLRestriction("deleted_at IS NULL")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Student extends SoftDeletableEntity {
+public class User extends SoftDeletableEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,10 +41,17 @@ public class Student extends SoftDeletableEntity {
     @Column(nullable = false, length = 255)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private UserRole role = UserRole.STUDENT;
+
     @PrePersist
     void generatePublicId() {
         if (publicId == null) {
             publicId = UUID.randomUUID();
+        }
+        if (role == null) {
+            role = UserRole.STUDENT;
         }
     }
 }

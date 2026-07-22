@@ -5,6 +5,7 @@ import br.com.techne.lyceum.academic.dto.SubjectDTO;
 import br.com.techne.lyceum.academic.dto.UpdateSubjectRequest;
 import br.com.techne.lyceum.academic.service.SubjectService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/subjects")
 @RequiredArgsConstructor
 @Tag(name = "Subjects", description = "Subject management")
+@SecurityRequirement(name = "bearerAuth")
 public class SubjectController {
 
     private final SubjectService subjectService;
@@ -46,6 +49,7 @@ public class SubjectController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create subject", description = "Creates a new subject")
     public SubjectDTO createSubject(@Valid @RequestBody CreateSubjectRequest request) {
         return subjectService.createSubject(request);
@@ -55,6 +59,7 @@ public class SubjectController {
             value = "/{publicId}",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Update subject",
             description = "Partially updates an existing subject (only provided fields)")
@@ -65,6 +70,7 @@ public class SubjectController {
 
     @DeleteMapping("/{publicId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete subject", description = "Deletes a subject by publicId")
     public void deleteSubject(@PathVariable UUID publicId) {
         subjectService.deleteSubject(publicId);

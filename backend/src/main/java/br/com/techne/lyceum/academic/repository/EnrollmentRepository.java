@@ -17,7 +17,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     @Override
     @EntityGraph(
             attributePaths = {
-                "student",
+                "user",
                 "classGroup",
                 "classGroup.subject",
                 "classGroup.subject.course"
@@ -26,28 +26,28 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     @EntityGraph(
             attributePaths = {
-                "student",
+                "user",
                 "classGroup",
                 "classGroup.subject",
                 "classGroup.subject.course"
             })
     Optional<Enrollment> findByPublicId(UUID publicId);
 
-    boolean existsByStudentIdAndClassGroupIdAndStatusIn(
-            Long studentId, Long classGroupId, Collection<EnrollmentStatus> statuses);
+    boolean existsByUserIdAndClassGroupIdAndStatusIn(
+            Long userId, Long classGroupId, Collection<EnrollmentStatus> statuses);
 
     @EntityGraph(
             attributePaths = {
-                "student",
+                "user",
                 "classGroup",
                 "classGroup.subject",
                 "classGroup.subject.course"
             })
-    List<Enrollment> findAllByStudentId(Long studentId);
+    List<Enrollment> findAllByUserId(Long userId);
 
     @EntityGraph(
             attributePaths = {
-                "student",
+                "user",
                 "classGroup",
                 "classGroup.subject",
                 "classGroup.subject.course"
