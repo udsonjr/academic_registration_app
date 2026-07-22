@@ -14,7 +14,7 @@ import { SnackbarHostComponent } from './shared/components/snackbar/snackbar-hos
     `
       :host {
         display: block;
-        min-height: 100vh;
+        height: 100%;
       }
     `,
   ],

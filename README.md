@@ -107,7 +107,12 @@ mvn spring-boot:run
 - API base: http://localhost:8080/api
 - Swagger UI: http://localhost:8080/api/swagger-ui.html
 - Admin seed: `admin@admin` / `admin`
-- CORS padrão: `http://localhost:4200`
+
+CORS padrão: `http://localhost:4200`.
+
+Após a migration `V7__seed_demo_data.sql`, há também alunos de teste (senha `admin`):
+`ana.silva@example.com`, `bruno.costa@example.com`, `carla.dias@example.com`, `diego.martins@example.com`
+— além de 5 cursos (1 inativo), 25 disciplinas, 50 turmas (algumas fechadas) e matrículas com status variados.
 
 ### 3. Frontend
 
