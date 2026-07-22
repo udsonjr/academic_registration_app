@@ -1,9 +1,9 @@
 package br.com.techne.lyceum.academic.controller;
 
+import br.com.techne.lyceum.academic.domain.EnrollmentStatus;
 import br.com.techne.lyceum.academic.dto.CreateEnrollmentRequest;
 import br.com.techne.lyceum.academic.dto.EnrollmentDTO;
 import br.com.techne.lyceum.academic.dto.PageResponse;
-import br.com.techne.lyceum.academic.security.SecurityUtils;
 import br.com.techne.lyceum.academic.service.EnrollmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,22 +40,23 @@ public class EnrollmentController {
     @Operation(
             summary = "List enrollments",
             description =
-                    "ADMIN: all enrollments, optionally filtered. STUDENT: only own enrollments.")
+                    "ADMIN: all enrollments with optional filters. STUDENT: only own enrollments."
+                            + " Supports sort by createdAt and status.")
     public PageResponse<EnrollmentDTO> getEnrollments(
-            @RequestParam(required = false) UUID userPublicId,
+            @RequestParam(required = false) EnrollmentStatus status,
+            @RequestParam(required = false) UUID coursePublicId,
+            @RequestParam(required = false) UUID subjectPublicId,
             @RequestParam(required = false) UUID classGroupPublicId,
-            @PageableDefault(size = 10) Pageable pageable) {
-        if (!SecurityUtils.isAdmin()) {
-            return enrollmentService.getEnrollmentsByUser(
-                    SecurityUtils.currentUserPublicId(), pageable);
-        }
-        if (userPublicId != null) {
-            return enrollmentService.getEnrollmentsByUser(userPublicId, pageable);
-        }
-        if (classGroupPublicId != null) {
-            return enrollmentService.getEnrollmentsByClassGroup(classGroupPublicId, pageable);
-        }
-        return enrollmentService.getEnrollments(pageable);
+            @RequestParam(required = false) UUID userPublicId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+                    Pageable pageable) {
+        return enrollmentService.getEnrollments(
+                status,
+                coursePublicId,
+                subjectPublicId,
+                classGroupPublicId,
+                userPublicId,
+                pageable);
     }
 
     @PostMapping(

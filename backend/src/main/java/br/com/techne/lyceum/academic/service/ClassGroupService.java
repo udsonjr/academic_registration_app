@@ -9,7 +9,12 @@ import org.springframework.data.domain.Pageable;
 
 public interface ClassGroupService {
 
-    PageResponse<ClassGroupDTO> getClassGroups(UUID subjectPublicId, Pageable pageable);
+    PageResponse<ClassGroupDTO> getClassGroups(
+            String name,
+            Boolean openForEnrollment,
+            UUID subjectPublicId,
+            UUID coursePublicId,
+            Pageable pageable);
 
     ClassGroupDTO getClassGroupByPublicId(UUID publicId);
 

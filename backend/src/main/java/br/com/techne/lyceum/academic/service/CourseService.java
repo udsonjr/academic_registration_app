@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface CourseService {
 
-    PageResponse<CourseDTO> getCourses(Pageable pageable);
+    PageResponse<CourseDTO> getCourses(String name, Boolean active, Pageable pageable);
 
     CourseDTO getCourseByPublicId(UUID publicId);
 

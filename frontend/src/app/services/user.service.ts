@@ -8,6 +8,7 @@ import {
   PageResponse,
   UpdateUserRequest,
   User,
+  UserRole,
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -16,7 +17,9 @@ export class UserService {
 
   constructor(private readonly http: HttpClient) {}
 
-  list(params: PageParams = {}): Observable<PageResponse<User>> {
+  list(
+    params: PageParams & { q?: string; role?: UserRole | '' } = {},
+  ): Observable<PageResponse<User>> {
     return this.http.get<PageResponse<User>>(this.baseUrl, {
       params: toHttpParams(params),
     });

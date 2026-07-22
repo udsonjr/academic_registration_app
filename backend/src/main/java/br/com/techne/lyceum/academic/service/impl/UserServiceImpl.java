@@ -7,6 +7,7 @@ import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateUserRequest;
 import br.com.techne.lyceum.academic.dto.UserDTO;
 import br.com.techne.lyceum.academic.repository.UserRepository;
+import br.com.techne.lyceum.academic.repository.spec.UserSpecs;
 import br.com.techne.lyceum.academic.security.SecurityUtils;
 import br.com.techne.lyceum.academic.service.UserService;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
@@ -27,9 +28,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<UserDTO> getUsers(Pageable pageable) {
+    public PageResponse<UserDTO> getUsers(String q, UserRole role, Pageable pageable) {
         SecurityUtils.requireAdmin();
-        return PageResponse.from(userRepository.findAll(pageable), UserDTO::from);
+        return PageResponse.from(
+                userRepository.findAll(UserSpecs.withFilters(q, role), pageable), UserDTO::from);
     }
 
     @Override

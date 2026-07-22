@@ -1,7 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ClassGroup, Subject } from '../../models';
+import { LucideAngularModule, Pencil, Trash2 } from 'lucide-angular';
+import { ClassGroup, Course, Subject } from '../../models';
 import { ClassGroupService } from '../../services/class-group.service';
+import { CourseService } from '../../services/course.service';
 import { SubjectService } from '../../services/subject.service';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
 import { PagerComponent } from '../../shared/components/pager/pager.component';
@@ -11,17 +13,22 @@ import { extractApiError } from '../../shared/utils/api-error';
 @Component({
   selector: 'app-class-groups',
   standalone: true,
-  imports: [ReactiveFormsModule, ConfirmModalComponent, PagerComponent],
+  imports: [ReactiveFormsModule, ConfirmModalComponent, PagerComponent, LucideAngularModule],
   templateUrl: './class-groups.component.html',
 })
 export class ClassGroupsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly classGroupService = inject(ClassGroupService);
   private readonly subjectService = inject(SubjectService);
+  private readonly courseService = inject(CourseService);
   private readonly snackbar = inject(SnackbarService);
+
+  readonly pencilIcon = Pencil;
+  readonly trashIcon = Trash2;
 
   classGroups: ClassGroup[] = [];
   subjects: Subject[] = [];
+  courses: Course[] = [];
   page = 0;
   size = 10;
   totalPages = 0;
@@ -33,6 +40,13 @@ export class ClassGroupsComponent implements OnInit {
   editing: ClassGroup | null = null;
   deleteTarget: ClassGroup | null = null;
 
+  readonly filters = this.fb.nonNullable.group({
+    name: [''],
+    openForEnrollment: ['' as '' | 'true' | 'false'],
+    coursePublicId: [''],
+    subjectPublicId: [''],
+  });
+
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(150)]],
     description: ['', [Validators.maxLength(500)]],
@@ -43,27 +57,75 @@ export class ClassGroupsComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.subjectService.list({ page: 0, size: 100 }).subscribe({
-      next: (res) => (this.subjects = res.content),
+    this.courseService.list({ page: 0, size: 100 }).subscribe({
+      next: (res) => (this.courses = res.content),
       error: (err) => this.snackbar.error(extractApiError(err)),
     });
+    this.loadSubjects();
+  }
+
+  loadSubjects(coursePublicId?: string): void {
+    this.subjectService
+      .list({
+        page: 0,
+        size: 100,
+        ...(coursePublicId ? { coursePublicId } : {}),
+      })
+      .subscribe({
+        next: (res) => (this.subjects = res.content),
+        error: (err) => this.snackbar.error(extractApiError(err)),
+      });
   }
 
   load(): void {
     this.loading = true;
-    this.classGroupService.list({ page: this.page, size: this.size }).subscribe({
-      next: (res) => {
-        this.classGroups = res.content;
-        this.page = res.page;
-        this.totalPages = res.totalPages;
-        this.totalElements = res.totalElements;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.loading = false;
-        this.snackbar.error(extractApiError(err));
-      },
+    const f = this.filters.getRawValue();
+    this.classGroupService
+      .list({
+        page: this.page,
+        size: this.size,
+        name: f.name.trim() || undefined,
+        openForEnrollment:
+          f.openForEnrollment === '' ? undefined : f.openForEnrollment === 'true',
+        coursePublicId: f.coursePublicId || undefined,
+        subjectPublicId: f.subjectPublicId || undefined,
+      })
+      .subscribe({
+        next: (res) => {
+          this.classGroups = res.content;
+          this.page = res.page;
+          this.totalPages = res.totalPages;
+          this.totalElements = res.totalElements;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.loading = false;
+          this.snackbar.error(extractApiError(err));
+        },
+      });
+  }
+
+  applyFilters(): void {
+    this.page = 0;
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.filters.reset({
+      name: '',
+      openForEnrollment: '',
+      coursePublicId: '',
+      subjectPublicId: '',
     });
+    this.page = 0;
+    this.loadSubjects();
+    this.load();
+  }
+
+  onFilterCourseChange(): void {
+    this.filters.patchValue({ subjectPublicId: '' });
+    const coursePublicId = this.filters.controls.coursePublicId.value;
+    this.loadSubjects(coursePublicId || undefined);
   }
 
   onPageChange(page: number): void {

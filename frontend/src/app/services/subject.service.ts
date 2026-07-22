@@ -18,7 +18,7 @@ export class SubjectService {
   constructor(private readonly http: HttpClient) {}
 
   list(
-    params: PageParams & { coursePublicId?: string } = {},
+    params: PageParams & { name?: string; coursePublicId?: string } = {},
   ): Observable<PageResponse<Subject>> {
     return this.http.get<PageResponse<Subject>>(this.baseUrl, {
       params: toHttpParams(params),

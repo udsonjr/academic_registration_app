@@ -1,5 +1,6 @@
 package br.com.techne.lyceum.academic.controller;
 
+import br.com.techne.lyceum.academic.domain.UserRole;
 import br.com.techne.lyceum.academic.dto.CreateUserRequest;
 import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateUserRequest;
@@ -12,6 +13,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -37,9 +40,17 @@ public class UserController {
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "List users", description = "Returns paginated users (ADMIN only)")
-    public PageResponse<UserDTO> getUsers(@PageableDefault(size = 10) Pageable pageable) {
-        return userService.getUsers(pageable);
+    @Operation(
+            summary = "List users",
+            description =
+                    "Returns paginated users with optional q (name/email) and role filters (ADMIN"
+                            + " only)")
+    public PageResponse<UserDTO> getUsers(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) UserRole role,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+                    Pageable pageable) {
+        return userService.getUsers(q, role, pageable);
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)

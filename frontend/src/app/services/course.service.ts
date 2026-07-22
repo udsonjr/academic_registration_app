@@ -17,7 +17,9 @@ export class CourseService {
 
   constructor(private readonly http: HttpClient) {}
 
-  list(params: PageParams = {}): Observable<PageResponse<Course>> {
+  list(
+    params: PageParams & { name?: string; active?: boolean | '' } = {},
+  ): Observable<PageResponse<Course>> {
     return this.http.get<PageResponse<Course>>(this.baseUrl, {
       params: toHttpParams(params),
     });

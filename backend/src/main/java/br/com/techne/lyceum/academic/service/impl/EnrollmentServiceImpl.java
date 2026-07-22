@@ -10,6 +10,7 @@ import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.EnrollmentRepository;
 import br.com.techne.lyceum.academic.repository.UserRepository;
+import br.com.techne.lyceum.academic.repository.spec.EnrollmentSpecs;
 import br.com.techne.lyceum.academic.security.SecurityUtils;
 import br.com.techne.lyceum.academic.service.EnrollmentService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
@@ -34,11 +35,33 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<EnrollmentDTO> getEnrollments(Pageable pageable) {
+    public PageResponse<EnrollmentDTO> getEnrollments(
+            EnrollmentStatus status,
+            UUID coursePublicId,
+            UUID subjectPublicId,
+            UUID classGroupPublicId,
+            UUID userPublicId,
+            Pageable pageable) {
+        UUID effectiveUserPublicId = userPublicId;
         if (!SecurityUtils.isAdmin()) {
-            return getEnrollmentsByUser(SecurityUtils.currentUserPublicId(), pageable);
+            UUID self = SecurityUtils.currentUserPublicId();
+            if (userPublicId != null && !userPublicId.equals(self)) {
+                throw new ForbiddenException(
+                        "ACCESS_DENIED", "Students can only view their own enrollments");
+            }
+            effectiveUserPublicId = self;
         }
-        return PageResponse.from(enrollmentRepository.findAll(pageable), EnrollmentDTO::from);
+
+        return PageResponse.from(
+                enrollmentRepository.findAll(
+                        EnrollmentSpecs.withFilters(
+                                status,
+                                coursePublicId,
+                                subjectPublicId,
+                                classGroupPublicId,
+                                effectiveUserPublicId),
+                        pageable),
+                EnrollmentDTO::from);
     }
 
     @Override
@@ -130,29 +153,5 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
         enrollment.setStatus(EnrollmentStatus.CANCELLED);
         return EnrollmentDTO.from(enrollmentRepository.save(enrollment));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponse<EnrollmentDTO> getEnrollmentsByUser(UUID userPublicId, Pageable pageable) {
-        if (!SecurityUtils.isAdmin() && !SecurityUtils.currentUserPublicId().equals(userPublicId)) {
-            throw new ForbiddenException(
-                    "ACCESS_DENIED", "Students can only view their own enrollments");
-        }
-
-        User user = userRepository.getByPublicIdOrThrow(userPublicId);
-        return PageResponse.from(
-                enrollmentRepository.findAllByUserId(user.getId(), pageable), EnrollmentDTO::from);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponse<EnrollmentDTO> getEnrollmentsByClassGroup(
-            UUID classGroupPublicId, Pageable pageable) {
-        SecurityUtils.requireAdmin();
-        ClassGroup classGroup = classGroupRepository.getByPublicIdOrThrow(classGroupPublicId);
-        return PageResponse.from(
-                enrollmentRepository.findAllByClassGroupId(classGroup.getId(), pageable),
-                EnrollmentDTO::from);
     }
 }

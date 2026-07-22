@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,11 +40,18 @@ public class ClassGroupController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "List class groups",
-            description = "Returns paginated class groups, optionally filtered by subject")
+            description =
+                    "Returns paginated class groups with optional filters (name, openForEnrollment,"
+                            + " subjectPublicId, coursePublicId) and sort (default: createdAt desc)")
     public PageResponse<ClassGroupDTO> getClassGroups(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean openForEnrollment,
             @RequestParam(required = false) UUID subjectPublicId,
-            @PageableDefault(size = 10) Pageable pageable) {
-        return classGroupService.getClassGroups(subjectPublicId, pageable);
+            @RequestParam(required = false) UUID coursePublicId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+                    Pageable pageable) {
+        return classGroupService.getClassGroups(
+                name, openForEnrollment, subjectPublicId, coursePublicId, pageable);
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)

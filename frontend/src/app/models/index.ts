@@ -38,6 +38,7 @@ export interface Enrollment {
   user: User;
   classGroup: ClassGroup;
   status: EnrollmentStatus;
+  createdAt: string;
 }
 
 export interface PageResponse<T> {
@@ -139,4 +140,5 @@ export interface CreateEnrollmentRequest {
 export interface PageParams {
   page?: number;
   size?: number;
+  sort?: string;
 }

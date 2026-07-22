@@ -6,6 +6,28 @@
   <button type="button" class="btn" (click)="openCreate()">Nova disciplina</button>
 </div>
 
+<form class="filters-bar" [formGroup]="filters" (ngSubmit)="applyFilters()">
+  <div class="filters-fields">
+    <div class="form-field">
+      <label>Nome</label>
+      <input type="text" formControlName="name" placeholder="Buscar por nome" />
+    </div>
+    <div class="form-field">
+      <label>Curso</label>
+      <select formControlName="coursePublicId">
+        <option value="">Todos</option>
+        @for (course of courses; track course.publicId) {
+          <option [value]="course.publicId">{{ course.name }}</option>
+        }
+      </select>
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm">Filtrar</button>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar</button>
+  </div>
+</form>
+
 @if (loading) {
   <p class="empty-state">Carregando...</p>
 } @else if (subjects.length === 0) {
@@ -13,6 +35,12 @@
 } @else {
   <div class="table-wrap">
     <table class="data-table">
+      <colgroup>
+        <col class="col-3" />
+        <col class="col-3" />
+        <col class="col-3" />
+        <col class="col-1" />
+      </colgroup>
       <thead>
         <tr>
           <th>Nome</th>
@@ -24,13 +52,29 @@
       <tbody>
         @for (subject of subjects; track subject.publicId) {
           <tr>
-            <td>{{ subject.name }}</td>
-            <td>{{ subject.description || '—' }}</td>
-            <td>{{ subject.course.name }}</td>
+            <td class="cell-ellipsis" [title]="subject.name">{{ subject.name }}</td>
+            <td class="cell-ellipsis" [title]="subject.description || ''">{{ subject.description || '—' }}</td>
+            <td class="cell-ellipsis" [title]="subject.course.name">{{ subject.course.name }}</td>
             <td>
               <div class="row-actions">
-                <button type="button" class="btn btn-ghost" (click)="openEdit(subject)">Editar</button>
-                <button type="button" class="btn btn-danger" (click)="requestDelete(subject)">Excluir</button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-ghost"
+                  title="Editar"
+                  aria-label="Editar"
+                  (click)="openEdit(subject)"
+                >
+                  <lucide-icon [img]="pencilIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-danger"
+                  title="Excluir"
+                  aria-label="Excluir"
+                  (click)="requestDelete(subject)"
+                >
+                  <lucide-icon [img]="trashIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                </button>
               </div>
             </td>
           </tr>

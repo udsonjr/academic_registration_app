@@ -6,6 +6,27 @@
   <button type="button" class="btn" (click)="openCreate()">Novo usuário</button>
 </div>
 
+<form class="filters-bar" [formGroup]="filters" (ngSubmit)="applyFilters()">
+  <div class="filters-fields">
+    <div class="form-field">
+      <label>Busca</label>
+      <input type="text" formControlName="q" placeholder="Nome ou e-mail" />
+    </div>
+    <div class="form-field narrow">
+      <label>Papel</label>
+      <select formControlName="role">
+        <option value="">Todos</option>
+        <option value="STUDENT">Aluno</option>
+        <option value="ADMIN">Administrador</option>
+      </select>
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm">Filtrar</button>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar</button>
+  </div>
+</form>
+
 @if (loading) {
   <p class="empty-state">Carregando...</p>
 } @else if (users.length === 0) {
@@ -13,6 +34,12 @@
 } @else {
   <div class="table-wrap">
     <table class="data-table">
+      <colgroup>
+        <col class="col-3" />
+        <col class="col-4" />
+        <col class="col-2" />
+        <col class="col-1" />
+      </colgroup>
       <thead>
         <tr>
           <th>Nome</th>
@@ -24,13 +51,29 @@
       <tbody>
         @for (user of users; track user.publicId) {
           <tr>
-            <td>{{ user.name }}</td>
-            <td>{{ user.email }}</td>
-            <td>{{ roleLabel(user.role) }}</td>
+            <td class="cell-ellipsis" [title]="user.name">{{ user.name }}</td>
+            <td class="cell-ellipsis" [title]="user.email">{{ user.email }}</td>
+            <td class="cell-ellipsis">{{ roleLabel(user.role) }}</td>
             <td>
               <div class="row-actions">
-                <button type="button" class="btn btn-ghost" (click)="openEdit(user)">Editar</button>
-                <button type="button" class="btn btn-danger" (click)="requestDelete(user)">Excluir</button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-ghost"
+                  title="Editar"
+                  aria-label="Editar"
+                  (click)="openEdit(user)"
+                >
+                  <lucide-icon [img]="pencilIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-danger"
+                  title="Excluir"
+                  aria-label="Excluir"
+                  (click)="requestDelete(user)"
+                >
+                  <lucide-icon [img]="trashIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                </button>
               </div>
             </td>
           </tr>

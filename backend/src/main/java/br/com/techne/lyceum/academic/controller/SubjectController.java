@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -39,11 +40,15 @@ public class SubjectController {
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "List subjects",
-            description = "Returns paginated subjects, optionally filtered by course")
+            description =
+                    "Returns paginated subjects with optional name and coursePublicId filters"
+                            + " (default sort: createdAt desc)")
     public PageResponse<SubjectDTO> getSubjects(
+            @RequestParam(required = false) String name,
             @RequestParam(required = false) UUID coursePublicId,
-            @PageableDefault(size = 10) Pageable pageable) {
-        return subjectService.getSubjects(coursePublicId, pageable);
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+                    Pageable pageable) {
+        return subjectService.getSubjects(name, coursePublicId, pageable);
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)

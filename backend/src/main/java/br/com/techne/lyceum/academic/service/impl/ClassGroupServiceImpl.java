@@ -8,6 +8,7 @@ import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateClassGroupRequest;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
+import br.com.techne.lyceum.academic.repository.spec.ClassGroupSpecs;
 import br.com.techne.lyceum.academic.service.ClassGroupService;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
 import java.util.UUID;
@@ -25,14 +26,18 @@ public class ClassGroupServiceImpl implements ClassGroupService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<ClassGroupDTO> getClassGroups(UUID subjectPublicId, Pageable pageable) {
-        if (subjectPublicId != null) {
-            Subject subject = subjectRepository.getByPublicIdOrThrow(subjectPublicId);
-            return PageResponse.from(
-                    classGroupRepository.findBySubjectId(subject.getId(), pageable),
-                    ClassGroupDTO::from);
-        }
-        return PageResponse.from(classGroupRepository.findAll(pageable), ClassGroupDTO::from);
+    public PageResponse<ClassGroupDTO> getClassGroups(
+            String name,
+            Boolean openForEnrollment,
+            UUID subjectPublicId,
+            UUID coursePublicId,
+            Pageable pageable) {
+        return PageResponse.from(
+                classGroupRepository.findAll(
+                        ClassGroupSpecs.withFilters(
+                                name, openForEnrollment, subjectPublicId, coursePublicId),
+                        pageable),
+                ClassGroupDTO::from);
     }
 
     @Override

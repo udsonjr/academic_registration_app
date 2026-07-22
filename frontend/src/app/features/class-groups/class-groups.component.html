@@ -6,6 +6,47 @@
   <button type="button" class="btn" (click)="openCreate()">Nova turma</button>
 </div>
 
+<form class="filters-bar" [formGroup]="filters" (ngSubmit)="applyFilters()">
+  <div class="filters-fields">
+    <div class="form-field">
+      <label>Nome</label>
+      <input type="text" formControlName="name" placeholder="Buscar por nome" />
+    </div>
+    <div class="form-field narrow">
+      <label>Matrícula</label>
+      <select formControlName="openForEnrollment">
+        <option value="">Todas</option>
+        <option value="true">Abertas</option>
+        <option value="false">Fechadas</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Curso</label>
+      <select formControlName="coursePublicId" (change)="onFilterCourseChange()">
+        <option value="">Todos</option>
+        @for (course of courses; track course.publicId) {
+          <option [value]="course.publicId">{{ course.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Disciplina</label>
+      <select formControlName="subjectPublicId">
+        <option value="">Todas</option>
+        @for (subject of subjects; track subject.publicId) {
+          <option [value]="subject.publicId">
+            {{ subject.name }} ({{ subject.course.name }})
+          </option>
+        }
+      </select>
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm">Filtrar</button>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar</button>
+  </div>
+</form>
+
 @if (loading) {
   <p class="empty-state">Carregando...</p>
 } @else if (classGroups.length === 0) {
@@ -13,6 +54,13 @@
 } @else {
   <div class="table-wrap">
     <table class="data-table">
+      <colgroup>
+        <col class="col-3" />
+        <col class="col-3" />
+        <col class="col-2" />
+        <col class="col-1" />
+        <col class="col-1" />
+      </colgroup>
       <thead>
         <tr>
           <th>Nome</th>
@@ -25,14 +73,30 @@
       <tbody>
         @for (group of classGroups; track group.publicId) {
           <tr>
-            <td>{{ group.name }}</td>
-            <td>{{ group.subject.name }}</td>
+            <td class="cell-ellipsis" [title]="group.name">{{ group.name }}</td>
+            <td class="cell-ellipsis" [title]="group.subject.name">{{ group.subject.name }}</td>
             <td>{{ group.enrolledStudents }}/{{ group.vacancyLimit }}</td>
             <td>{{ group.openForEnrollment ? 'Sim' : 'Não' }}</td>
             <td>
               <div class="row-actions">
-                <button type="button" class="btn btn-ghost" (click)="openEdit(group)">Editar</button>
-                <button type="button" class="btn btn-danger" (click)="requestDelete(group)">Excluir</button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-ghost"
+                  title="Editar"
+                  aria-label="Editar"
+                  (click)="openEdit(group)"
+                >
+                  <lucide-icon [img]="pencilIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-danger"
+                  title="Excluir"
+                  aria-label="Excluir"
+                  (click)="requestDelete(group)"
+                >
+                  <lucide-icon [img]="trashIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                </button>
               </div>
             </td>
           </tr>

@@ -5,6 +5,7 @@ import { environment } from '../../environments/environment';
 import {
   CreateEnrollmentRequest,
   Enrollment,
+  EnrollmentStatus,
   PageParams,
   PageResponse,
 } from '../models';
@@ -17,7 +18,13 @@ export class EnrollmentService {
   constructor(private readonly http: HttpClient) {}
 
   list(
-    params: PageParams & { userPublicId?: string; classGroupPublicId?: string } = {},
+    params: PageParams & {
+      status?: EnrollmentStatus | '';
+      coursePublicId?: string;
+      subjectPublicId?: string;
+      classGroupPublicId?: string;
+      userPublicId?: string;
+    } = {},
   ): Observable<PageResponse<Enrollment>> {
     return this.http.get<PageResponse<Enrollment>>(this.baseUrl, {
       params: toHttpParams(params),

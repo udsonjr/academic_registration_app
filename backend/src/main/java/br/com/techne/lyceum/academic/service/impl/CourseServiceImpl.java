@@ -7,6 +7,7 @@ import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateCourseRequest;
 import br.com.techne.lyceum.academic.repository.CourseRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
+import br.com.techne.lyceum.academic.repository.spec.CourseSpecs;
 import br.com.techne.lyceum.academic.service.CourseService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import java.util.UUID;
@@ -24,8 +25,10 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<CourseDTO> getCourses(Pageable pageable) {
-        return PageResponse.from(courseRepository.findAll(pageable), CourseDTO::from);
+    public PageResponse<CourseDTO> getCourses(String name, Boolean active, Pageable pageable) {
+        return PageResponse.from(
+                courseRepository.findAll(CourseSpecs.withFilters(name, active), pageable),
+                CourseDTO::from);
     }
 
     @Override

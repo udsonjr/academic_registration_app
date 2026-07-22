@@ -1,7 +1,16 @@
+import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { CircleX, CircleCheck, LucideAngularModule, Check } from 'lucide-angular';
 import { AuthService } from '../../core/auth.service';
-import { ClassGroup, Course, Enrollment, Subject, User } from '../../models';
+import {
+  ClassGroup,
+  Course,
+  Enrollment,
+  EnrollmentStatus,
+  Subject,
+  User,
+} from '../../models';
 import { ClassGroupService } from '../../services/class-group.service';
 import { CourseService } from '../../services/course.service';
 import { EnrollmentService } from '../../services/enrollment.service';
@@ -15,7 +24,13 @@ import { enrollmentStatusLabel, extractApiError } from '../../shared/utils/api-e
 @Component({
   selector: 'app-enrollments',
   standalone: true,
-  imports: [ReactiveFormsModule, ConfirmModalComponent, PagerComponent],
+  imports: [
+    ReactiveFormsModule,
+    ConfirmModalComponent,
+    PagerComponent,
+    DatePipe,
+    LucideAngularModule,
+  ],
   templateUrl: './enrollments.component.html',
 })
 export class EnrollmentsComponent implements OnInit {
@@ -27,6 +42,9 @@ export class EnrollmentsComponent implements OnInit {
   private readonly classGroupService = inject(ClassGroupService);
   private readonly userService = inject(UserService);
   private readonly snackbar = inject(SnackbarService);
+
+  readonly approveIcon = CircleCheck;
+  readonly cancelIcon = CircleX;
 
   enrollments: Enrollment[] = [];
   page = 0;
@@ -46,11 +64,25 @@ export class EnrollmentsComponent implements OnInit {
   classGroups: ClassGroup[] = [];
   users: User[] = [];
 
+  filterCourses: Course[] = [];
+  filterSubjects: Subject[] = [];
+  filterClassGroups: ClassGroup[] = [];
+  filterUsers: User[] = [];
+
   confirmOpen = false;
   confirmTitle = '';
   confirmMessage = '';
   confirmLabel = 'Confirmar';
   pendingAction: (() => void) | null = null;
+
+  readonly filters = this.fb.nonNullable.group({
+    status: ['' as '' | EnrollmentStatus],
+    coursePublicId: [''],
+    subjectPublicId: [''],
+    classGroupPublicId: [''],
+    userPublicId: [''],
+    sort: ['createdAt,desc'],
+  });
 
   readonly createForm = this.fb.nonNullable.group({
     userPublicId: [''],
@@ -68,24 +100,113 @@ export class EnrollmentsComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.loadFilterOptions();
     this.load();
+  }
+
+  loadFilterOptions(): void {
+    this.courseService.list({ page: 0, size: 100 }).subscribe({
+      next: (res) => (this.filterCourses = res.content),
+      error: (err) => this.snackbar.error(extractApiError(err)),
+    });
+    this.loadFilterSubjects();
+    this.loadFilterClassGroups();
+    if (this.isAdmin) {
+      this.userService.list({ page: 0, size: 100, role: 'STUDENT' }).subscribe({
+        next: (res) => (this.filterUsers = res.content),
+        error: (err) => this.snackbar.error(extractApiError(err)),
+      });
+    }
+  }
+
+  loadFilterSubjects(coursePublicId?: string): void {
+    this.subjectService
+      .list({
+        page: 0,
+        size: 100,
+        ...(coursePublicId ? { coursePublicId } : {}),
+      })
+      .subscribe({
+        next: (res) => (this.filterSubjects = res.content),
+        error: (err) => this.snackbar.error(extractApiError(err)),
+      });
+  }
+
+  loadFilterClassGroups(subjectPublicId?: string, coursePublicId?: string): void {
+    this.classGroupService
+      .list({
+        page: 0,
+        size: 100,
+        ...(subjectPublicId ? { subjectPublicId } : {}),
+        ...(coursePublicId && !subjectPublicId ? { coursePublicId } : {}),
+      })
+      .subscribe({
+        next: (res) => (this.filterClassGroups = res.content),
+        error: (err) => this.snackbar.error(extractApiError(err)),
+      });
   }
 
   load(): void {
     this.loading = true;
-    this.enrollmentService.list({ page: this.page, size: this.size }).subscribe({
-      next: (response) => {
-        this.enrollments = response.content;
-        this.page = response.page;
-        this.totalPages = response.totalPages;
-        this.totalElements = response.totalElements;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.loading = false;
-        this.snackbar.error(extractApiError(err));
-      },
+    const f = this.filters.getRawValue();
+    this.enrollmentService
+      .list({
+        page: this.page,
+        size: this.size,
+        sort: f.sort,
+        status: f.status || undefined,
+        coursePublicId: f.coursePublicId || undefined,
+        subjectPublicId: f.subjectPublicId || undefined,
+        classGroupPublicId: f.classGroupPublicId || undefined,
+        userPublicId: this.isAdmin ? f.userPublicId || undefined : undefined,
+      })
+      .subscribe({
+        next: (response) => {
+          this.enrollments = response.content;
+          this.page = response.page;
+          this.totalPages = response.totalPages;
+          this.totalElements = response.totalElements;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.loading = false;
+          this.snackbar.error(extractApiError(err));
+        },
+      });
+  }
+
+  applyFilters(): void {
+    this.page = 0;
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.filters.reset({
+      status: '',
+      coursePublicId: '',
+      subjectPublicId: '',
+      classGroupPublicId: '',
+      userPublicId: '',
+      sort: 'createdAt,desc',
     });
+    this.page = 0;
+    this.loadFilterSubjects();
+    this.loadFilterClassGroups();
+    this.load();
+  }
+
+  onFilterCourseChange(): void {
+    this.filters.patchValue({ subjectPublicId: '', classGroupPublicId: '' });
+    const coursePublicId = this.filters.controls.coursePublicId.value || undefined;
+    this.loadFilterSubjects(coursePublicId);
+    this.loadFilterClassGroups(undefined, coursePublicId);
+  }
+
+  onFilterSubjectChange(): void {
+    this.filters.patchValue({ classGroupPublicId: '' });
+    const subjectPublicId = this.filters.controls.subjectPublicId.value || undefined;
+    const coursePublicId = this.filters.controls.coursePublicId.value || undefined;
+    this.loadFilterClassGroups(subjectPublicId, coursePublicId);
   }
 
   onPageChange(page: number): void {
@@ -126,8 +247,8 @@ export class EnrollmentsComponent implements OnInit {
   }
 
   loadUsers(): void {
-    this.userService.list({ page: 0, size: 100 }).subscribe({
-      next: (res) => (this.users = res.content.filter((u) => u.role === 'STUDENT')),
+    this.userService.list({ page: 0, size: 100, role: 'STUDENT' }).subscribe({
+      next: (res) => (this.users = res.content),
       error: (err) => this.snackbar.error(extractApiError(err)),
     });
   }

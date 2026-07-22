@@ -9,7 +9,7 @@ import org.springframework.data.domain.Pageable;
 
 public interface SubjectService {
 
-    PageResponse<SubjectDTO> getSubjects(UUID coursePublicId, Pageable pageable);
+    PageResponse<SubjectDTO> getSubjects(String name, UUID coursePublicId, Pageable pageable);
 
     SubjectDTO getSubjectByPublicId(UUID publicId);
 

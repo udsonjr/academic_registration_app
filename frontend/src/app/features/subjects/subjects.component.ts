@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { LucideAngularModule, Pencil, Trash2 } from 'lucide-angular';
 import { Course, Subject } from '../../models';
 import { CourseService } from '../../services/course.service';
 import { SubjectService } from '../../services/subject.service';
@@ -11,7 +12,7 @@ import { extractApiError } from '../../shared/utils/api-error';
 @Component({
   selector: 'app-subjects',
   standalone: true,
-  imports: [ReactiveFormsModule, ConfirmModalComponent, PagerComponent],
+  imports: [ReactiveFormsModule, ConfirmModalComponent, PagerComponent, LucideAngularModule],
   templateUrl: './subjects.component.html',
 })
 export class SubjectsComponent implements OnInit {
@@ -19,6 +20,9 @@ export class SubjectsComponent implements OnInit {
   private readonly subjectService = inject(SubjectService);
   private readonly courseService = inject(CourseService);
   private readonly snackbar = inject(SnackbarService);
+
+  readonly pencilIcon = Pencil;
+  readonly trashIcon = Trash2;
 
   subjects: Subject[] = [];
   courses: Course[] = [];
@@ -32,6 +36,11 @@ export class SubjectsComponent implements OnInit {
   formOpen = false;
   editing: Subject | null = null;
   deleteTarget: Subject | null = null;
+
+  readonly filters = this.fb.nonNullable.group({
+    name: [''],
+    coursePublicId: [''],
+  });
 
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(150)]],
@@ -49,19 +58,38 @@ export class SubjectsComponent implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.subjectService.list({ page: this.page, size: this.size }).subscribe({
-      next: (res) => {
-        this.subjects = res.content;
-        this.page = res.page;
-        this.totalPages = res.totalPages;
-        this.totalElements = res.totalElements;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.loading = false;
-        this.snackbar.error(extractApiError(err));
-      },
-    });
+    const f = this.filters.getRawValue();
+    this.subjectService
+      .list({
+        page: this.page,
+        size: this.size,
+        name: f.name.trim() || undefined,
+        coursePublicId: f.coursePublicId || undefined,
+      })
+      .subscribe({
+        next: (res) => {
+          this.subjects = res.content;
+          this.page = res.page;
+          this.totalPages = res.totalPages;
+          this.totalElements = res.totalElements;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.loading = false;
+          this.snackbar.error(extractApiError(err));
+        },
+      });
+  }
+
+  applyFilters(): void {
+    this.page = 0;
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.filters.reset({ name: '', coursePublicId: '' });
+    this.page = 0;
+    this.load();
   }
 
   onPageChange(page: number): void {

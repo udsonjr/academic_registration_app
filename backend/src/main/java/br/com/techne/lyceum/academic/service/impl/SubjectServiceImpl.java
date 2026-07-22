@@ -9,6 +9,7 @@ import br.com.techne.lyceum.academic.dto.UpdateSubjectRequest;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.CourseRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
+import br.com.techne.lyceum.academic.repository.spec.SubjectSpecs;
 import br.com.techne.lyceum.academic.service.SubjectService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import java.util.UUID;
@@ -27,13 +28,11 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResponse<SubjectDTO> getSubjects(UUID coursePublicId, Pageable pageable) {
-        if (coursePublicId != null) {
-            Course course = courseRepository.getByPublicIdOrThrow(coursePublicId);
-            return PageResponse.from(
-                    subjectRepository.findByCourseId(course.getId(), pageable), SubjectDTO::from);
-        }
-        return PageResponse.from(subjectRepository.findAll(pageable), SubjectDTO::from);
+    public PageResponse<SubjectDTO> getSubjects(
+            String name, UUID coursePublicId, Pageable pageable) {
+        return PageResponse.from(
+                subjectRepository.findAll(SubjectSpecs.withFilters(name, coursePublicId), pageable),
+                SubjectDTO::from);
     }
 
     @Override

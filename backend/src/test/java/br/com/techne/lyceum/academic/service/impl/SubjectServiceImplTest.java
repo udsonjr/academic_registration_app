@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class SubjectServiceImplTest {
@@ -73,29 +75,29 @@ class SubjectServiceImplTest {
         Subject subject1 = mockedSubject(1L, "Algorithms", "Intro", course);
         Subject subject2 = mockedSubject(2L, "Databases", "SQL basics", course);
         Pageable pageable = PageRequest.of(0, 10);
-        when(subjectRepository.findAll(pageable))
+        when(subjectRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(subject1, subject2), pageable, 2));
 
-        PageResponse<SubjectDTO> result = subjectService.getSubjects(null, pageable);
+        PageResponse<SubjectDTO> result = subjectService.getSubjects(null, null, pageable);
 
         assertEquals(2, result.content().size());
         assertEquals(subject1.getPublicId(), result.content().get(0).publicId());
         assertEquals("Algorithms", result.content().get(0).name());
         assertEquals(course.getPublicId(), result.content().get(0).course().publicId());
         assertEquals("Databases", result.content().get(1).name());
-        verify(subjectRepository).findAll(pageable);
+        verify(subjectRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
     void getSubjects_whenEmpty_returnsEmptyList() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(subjectRepository.findAll(pageable))
+        when(subjectRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        PageResponse<SubjectDTO> result = subjectService.getSubjects(null, pageable);
+        PageResponse<SubjectDTO> result = subjectService.getSubjects(null, null, pageable);
 
         assertTrue(result.content().isEmpty());
-        verify(subjectRepository).findAll(pageable);
+        verify(subjectRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
@@ -226,7 +228,7 @@ class SubjectServiceImplTest {
 
         ArgumentCaptor<Subject> captor = ArgumentCaptor.forClass(Subject.class);
         verify(subjectRepository).save(captor.capture());
-        verify(subjectRepository, never()).delete(any());
+        verify(subjectRepository, never()).delete(any(Subject.class));
         assertNotNull(captor.getValue().getDeletedAt());
     }
 
@@ -244,7 +246,7 @@ class SubjectServiceImplTest {
 
         assertEquals("SUBJECT_HAS_CLASS_GROUPS", ex.getCode());
         verify(subjectRepository, never()).save(any());
-        verify(subjectRepository, never()).delete(any());
+        verify(subjectRepository, never()).delete(any(Subject.class));
     }
 
     @Test
@@ -260,6 +262,6 @@ class SubjectServiceImplTest {
 
         assertEquals("SUBJECT_NOT_FOUND", ex.getCode());
         verify(subjectRepository, never()).save(any());
-        verify(subjectRepository, never()).delete(any());
+        verify(subjectRepository, never()).delete(any(Subject.class));
     }
 }

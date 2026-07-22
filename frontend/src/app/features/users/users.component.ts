@@ -1,5 +1,6 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { LucideAngularModule, Pencil, Trash2 } from 'lucide-angular';
 import { User, UserRole } from '../../models';
 import { UserService } from '../../services/user.service';
 import { ConfirmModalComponent } from '../../shared/components/confirm-modal/confirm-modal.component';
@@ -10,13 +11,16 @@ import { extractApiError, roleLabel } from '../../shared/utils/api-error';
 @Component({
   selector: 'app-users',
   standalone: true,
-  imports: [ReactiveFormsModule, ConfirmModalComponent, PagerComponent],
+  imports: [ReactiveFormsModule, ConfirmModalComponent, PagerComponent, LucideAngularModule],
   templateUrl: './users.component.html',
 })
 export class UsersComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly userService = inject(UserService);
   private readonly snackbar = inject(SnackbarService);
+
+  readonly pencilIcon = Pencil;
+  readonly trashIcon = Trash2;
 
   users: User[] = [];
   page = 0;
@@ -29,6 +33,11 @@ export class UsersComponent implements OnInit {
   formOpen = false;
   editing: User | null = null;
   deleteTarget: User | null = null;
+
+  readonly filters = this.fb.nonNullable.group({
+    q: [''],
+    role: ['' as '' | UserRole],
+  });
 
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required]],
@@ -46,19 +55,38 @@ export class UsersComponent implements OnInit {
 
   load(): void {
     this.loading = true;
-    this.userService.list({ page: this.page, size: this.size }).subscribe({
-      next: (res) => {
-        this.users = res.content;
-        this.page = res.page;
-        this.totalPages = res.totalPages;
-        this.totalElements = res.totalElements;
-        this.loading = false;
-      },
-      error: (err) => {
-        this.loading = false;
-        this.snackbar.error(extractApiError(err));
-      },
-    });
+    const f = this.filters.getRawValue();
+    this.userService
+      .list({
+        page: this.page,
+        size: this.size,
+        q: f.q.trim() || undefined,
+        role: f.role || undefined,
+      })
+      .subscribe({
+        next: (res) => {
+          this.users = res.content;
+          this.page = res.page;
+          this.totalPages = res.totalPages;
+          this.totalElements = res.totalElements;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.loading = false;
+          this.snackbar.error(extractApiError(err));
+        },
+      });
+  }
+
+  applyFilters(): void {
+    this.page = 0;
+    this.load();
+  }
+
+  clearFilters(): void {
+    this.filters.reset({ q: '', role: '' });
+    this.page = 0;
+    this.load();
   }
 
   onPageChange(page: number): void {

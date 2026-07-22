@@ -18,7 +18,12 @@ export class ClassGroupService {
   constructor(private readonly http: HttpClient) {}
 
   list(
-    params: PageParams & { subjectPublicId?: string } = {},
+    params: PageParams & {
+      name?: string;
+      openForEnrollment?: boolean | '';
+      subjectPublicId?: string;
+      coursePublicId?: string;
+    } = {},
   ): Observable<PageResponse<ClassGroup>> {
     return this.http.get<PageResponse<ClassGroup>>(this.baseUrl, {
       params: toHttpParams(params),

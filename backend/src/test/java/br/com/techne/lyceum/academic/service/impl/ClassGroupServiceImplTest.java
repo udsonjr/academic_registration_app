@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 @ExtendWith(MockitoExtension.class)
 class ClassGroupServiceImplTest {
@@ -87,10 +89,11 @@ class ClassGroupServiceImplTest {
         ClassGroup group1 = mockedClassGroup(1L, "Group A", "Morning", subject, 0, 40, true);
         ClassGroup group2 = mockedClassGroup(2L, "Group B", "Evening", subject, 5, 30, false);
         Pageable pageable = PageRequest.of(0, 10);
-        when(classGroupRepository.findAll(pageable))
+        when(classGroupRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(group1, group2), pageable, 2));
 
-        PageResponse<ClassGroupDTO> result = classGroupService.getClassGroups(null, pageable);
+        PageResponse<ClassGroupDTO> result =
+                classGroupService.getClassGroups(null, null, null, null, pageable);
 
         assertEquals(2, result.content().size());
         assertEquals(group1.getPublicId(), result.content().get(0).publicId());
@@ -102,19 +105,20 @@ class ClassGroupServiceImplTest {
         assertEquals("Group B", result.content().get(1).name());
         assertEquals(5, result.content().get(1).enrolledStudents());
         assertEquals(false, result.content().get(1).openForEnrollment());
-        verify(classGroupRepository).findAll(pageable);
+        verify(classGroupRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
     void getClassGroups_whenEmpty_returnsEmptyList() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(classGroupRepository.findAll(pageable))
+        when(classGroupRepository.findAll(any(Specification.class), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        PageResponse<ClassGroupDTO> result = classGroupService.getClassGroups(null, pageable);
+        PageResponse<ClassGroupDTO> result =
+                classGroupService.getClassGroups(null, null, null, null, pageable);
 
         assertTrue(result.content().isEmpty());
-        verify(classGroupRepository).findAll(pageable);
+        verify(classGroupRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
@@ -305,7 +309,7 @@ class ClassGroupServiceImplTest {
 
         ArgumentCaptor<ClassGroup> captor = ArgumentCaptor.forClass(ClassGroup.class);
         verify(classGroupRepository).save(captor.capture());
-        verify(classGroupRepository, never()).delete(any());
+        verify(classGroupRepository, never()).delete(any(ClassGroup.class));
         assertNotNull(captor.getValue().getDeletedAt());
     }
 
@@ -324,6 +328,6 @@ class ClassGroupServiceImplTest {
 
         assertEquals("CLASS_GROUP_NOT_FOUND", ex.getCode());
         verify(classGroupRepository, never()).save(any());
-        verify(classGroupRepository, never()).delete(any());
+        verify(classGroupRepository, never()).delete(any(ClassGroup.class));
     }
 }

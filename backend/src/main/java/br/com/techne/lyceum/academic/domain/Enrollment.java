@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -54,6 +55,9 @@ public class Enrollment extends SoftDeletableEntity {
         }
         if (status == null) {
             status = EnrollmentStatus.PENDING;
+        }
+        if (getCreatedAt() == null) {
+            setCreatedAt(Instant.now());
         }
     }
 }

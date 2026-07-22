@@ -111,6 +111,88 @@ textarea {
   font-size: 0.9rem;
 }
 
+.filters-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.filters-bar .filters-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.filters-bar .form-field {
+  margin: 0;
+  min-width: 10rem;
+  flex: 1 1 10rem;
+}
+
+.filters-bar .form-field.narrow {
+  flex: 0 1 9rem;
+  min-width: 8rem;
+}
+
+.filters-bar .filter-actions {
+  display: flex;
+  gap: 0.45rem;
+  flex: 0 0 auto;
+}
+
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+}
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: var(--radius);
+}
+
+.btn-icon.btn-ghost {
+  color: var(--muted-foreground);
+}
+
+.btn-icon.btn-ghost:hover:not(:disabled) {
+  background: var(--muted);
+  color: var(--foreground);
+  opacity: 1;
+}
+
+.btn-icon.btn-danger {
+  background: transparent;
+  color: var(--destructive);
+  border-color: transparent;
+}
+
+.btn-icon.btn-danger:hover:not(:disabled) {
+  background: color-mix(in oklch, var(--destructive) 12%, white);
+  opacity: 1;
+}
+
+.btn-icon.btn-success {
+  background: transparent;
+  color: oklch(45% 0.12 150);
+  border-color: transparent;
+}
+
+.btn-icon.btn-success:hover:not(:disabled) {
+  background: oklch(94% 0.05 150);
+  opacity: 1;
+}
+
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--border);
@@ -119,13 +201,14 @@ textarea {
 
 table.data-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 table.data-table th,
 table.data-table td {
-  padding: 0.75rem 0.9rem;
+  padding: 0.55rem 0.65rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
@@ -140,6 +223,28 @@ table.data-table th {
 
 table.data-table tr:last-child td {
   border-bottom: none;
+}
+
+.cell-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-1 {
+  width: 10%;
+}
+
+.col-2 {
+  width: 20%;
+}
+
+.col-3 {
+  width: 30%;
+}
+
+.col-4 {
+  width: 40%;
 }
 
 .badge {
@@ -245,8 +350,9 @@ table.data-table tr:last-child td {
 
 .row-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  align-items: center;
 }
 
 .empty-state {
