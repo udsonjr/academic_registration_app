@@ -2,14 +2,15 @@ package br.com.techne.lyceum.academic.service;
 
 import br.com.techne.lyceum.academic.domain.UserRole;
 import br.com.techne.lyceum.academic.dto.CreateUserRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateUserRequest;
 import br.com.techne.lyceum.academic.dto.UserDTO;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 
 public interface UserService {
 
-    List<UserDTO> getUsers();
+    PageResponse<UserDTO> getUsers(Pageable pageable);
 
     UserDTO getUserByPublicId(UUID publicId);
 

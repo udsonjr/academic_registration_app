@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import br.com.techne.lyceum.academic.domain.Course;
 import br.com.techne.lyceum.academic.dto.CourseDTO;
 import br.com.techne.lyceum.academic.dto.CreateCourseRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateCourseRequest;
 import br.com.techne.lyceum.academic.repository.CourseRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
@@ -25,6 +26,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class CourseServiceImplTest {
@@ -53,29 +57,32 @@ class CourseServiceImplTest {
     void getCourses_whenCoursesExist_returnsMappedDtos() {
         Course course1 = mockedCourse(1L, "Computer Science", "CS degree", true);
         Course course2 = mockedCourse(2L, "Mathematics", "Math degree", false);
-        when(courseRepository.findAll()).thenReturn(List.of(course1, course2));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(courseRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(course1, course2), pageable, 2));
 
-        List<CourseDTO> result = courseService.getCourses();
+        PageResponse<CourseDTO> result = courseService.getCourses(pageable);
 
-        assertEquals(2, result.size());
-        assertEquals(course1.getPublicId(), result.get(0).publicId());
-        assertEquals("Computer Science", result.get(0).name());
-        assertEquals("CS degree", result.get(0).description());
-        assertEquals(true, result.get(0).active());
-        assertEquals(course2.getPublicId(), result.get(1).publicId());
-        assertEquals("Mathematics", result.get(1).name());
-        assertEquals(false, result.get(1).active());
-        verify(courseRepository).findAll();
+        assertEquals(2, result.content().size());
+        assertEquals(course1.getPublicId(), result.content().get(0).publicId());
+        assertEquals("Computer Science", result.content().get(0).name());
+        assertEquals("CS degree", result.content().get(0).description());
+        assertEquals(true, result.content().get(0).active());
+        assertEquals(course2.getPublicId(), result.content().get(1).publicId());
+        assertEquals("Mathematics", result.content().get(1).name());
+        assertEquals(false, result.content().get(1).active());
+        verify(courseRepository).findAll(pageable);
     }
 
     @Test
     void getCourses_whenEmpty_returnsEmptyList() {
-        when(courseRepository.findAll()).thenReturn(List.of());
+        Pageable pageable = PageRequest.of(0, 10);
+        when(courseRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        List<CourseDTO> result = courseService.getCourses();
+        PageResponse<CourseDTO> result = courseService.getCourses(pageable);
 
-        assertTrue(result.isEmpty());
-        verify(courseRepository).findAll();
+        assertTrue(result.content().isEmpty());
+        verify(courseRepository).findAll(pageable);
     }
 
     @Test

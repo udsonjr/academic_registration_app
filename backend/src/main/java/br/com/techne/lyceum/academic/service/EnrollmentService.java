@@ -2,12 +2,13 @@ package br.com.techne.lyceum.academic.service;
 
 import br.com.techne.lyceum.academic.dto.CreateEnrollmentRequest;
 import br.com.techne.lyceum.academic.dto.EnrollmentDTO;
-import java.util.List;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 
 public interface EnrollmentService {
 
-    List<EnrollmentDTO> getEnrollments();
+    PageResponse<EnrollmentDTO> getEnrollments(Pageable pageable);
 
     EnrollmentDTO createEnrollment(CreateEnrollmentRequest request);
 
@@ -15,7 +16,8 @@ public interface EnrollmentService {
 
     EnrollmentDTO cancelEnrollment(UUID publicId);
 
-    List<EnrollmentDTO> getEnrollmentsByUser(UUID userPublicId);
+    PageResponse<EnrollmentDTO> getEnrollmentsByUser(UUID userPublicId, Pageable pageable);
 
-    List<EnrollmentDTO> getEnrollmentsByClassGroup(UUID classGroupPublicId);
+    PageResponse<EnrollmentDTO> getEnrollmentsByClassGroup(
+            UUID classGroupPublicId, Pageable pageable);
 }

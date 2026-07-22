@@ -2,13 +2,14 @@ package br.com.techne.lyceum.academic.service;
 
 import br.com.techne.lyceum.academic.dto.ClassGroupDTO;
 import br.com.techne.lyceum.academic.dto.CreateClassGroupRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateClassGroupRequest;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 
 public interface ClassGroupService {
 
-    List<ClassGroupDTO> getClassGroups();
+    PageResponse<ClassGroupDTO> getClassGroups(UUID subjectPublicId, Pageable pageable);
 
     ClassGroupDTO getClassGroupByPublicId(UUID publicId);
 

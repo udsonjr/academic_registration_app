@@ -14,6 +14,7 @@ import br.com.techne.lyceum.academic.domain.Course;
 import br.com.techne.lyceum.academic.domain.Subject;
 import br.com.techne.lyceum.academic.dto.ClassGroupDTO;
 import br.com.techne.lyceum.academic.dto.CreateClassGroupRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateClassGroupRequest;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
@@ -27,6 +28,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @ExtendWith(MockitoExtension.class)
 class ClassGroupServiceImplTest {
@@ -82,31 +86,35 @@ class ClassGroupServiceImplTest {
         Subject subject = mockedSubject();
         ClassGroup group1 = mockedClassGroup(1L, "Group A", "Morning", subject, 0, 40, true);
         ClassGroup group2 = mockedClassGroup(2L, "Group B", "Evening", subject, 5, 30, false);
-        when(classGroupRepository.findAll()).thenReturn(List.of(group1, group2));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(classGroupRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(group1, group2), pageable, 2));
 
-        List<ClassGroupDTO> result = classGroupService.getClassGroups();
+        PageResponse<ClassGroupDTO> result = classGroupService.getClassGroups(null, pageable);
 
-        assertEquals(2, result.size());
-        assertEquals(group1.getPublicId(), result.get(0).publicId());
-        assertEquals("Group A", result.get(0).name());
-        assertEquals(subject.getPublicId(), result.get(0).subject().publicId());
-        assertEquals(0, result.get(0).enrolledStudents());
-        assertEquals(40, result.get(0).vacancyLimit());
-        assertEquals(true, result.get(0).openForEnrollment());
-        assertEquals("Group B", result.get(1).name());
-        assertEquals(5, result.get(1).enrolledStudents());
-        assertEquals(false, result.get(1).openForEnrollment());
-        verify(classGroupRepository).findAll();
+        assertEquals(2, result.content().size());
+        assertEquals(group1.getPublicId(), result.content().get(0).publicId());
+        assertEquals("Group A", result.content().get(0).name());
+        assertEquals(subject.getPublicId(), result.content().get(0).subject().publicId());
+        assertEquals(0, result.content().get(0).enrolledStudents());
+        assertEquals(40, result.content().get(0).vacancyLimit());
+        assertEquals(true, result.content().get(0).openForEnrollment());
+        assertEquals("Group B", result.content().get(1).name());
+        assertEquals(5, result.content().get(1).enrolledStudents());
+        assertEquals(false, result.content().get(1).openForEnrollment());
+        verify(classGroupRepository).findAll(pageable);
     }
 
     @Test
     void getClassGroups_whenEmpty_returnsEmptyList() {
-        when(classGroupRepository.findAll()).thenReturn(List.of());
+        Pageable pageable = PageRequest.of(0, 10);
+        when(classGroupRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        List<ClassGroupDTO> result = classGroupService.getClassGroups();
+        PageResponse<ClassGroupDTO> result = classGroupService.getClassGroups(null, pageable);
 
-        assertTrue(result.isEmpty());
-        verify(classGroupRepository).findAll();
+        assertTrue(result.content().isEmpty());
+        verify(classGroupRepository).findAll(pageable);
     }
 
     @Test

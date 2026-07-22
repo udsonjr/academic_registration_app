@@ -2,9 +2,7 @@
 
 Sistema acadêmico de matrículas — desafio técnico **Desenvolvedor(a) Pleno Full Stack** (Tribe Lyceum / Techne).
 
-Monólito com backend Java/Spring Boot, frontend TypeScript (React + Vite) e PostgreSQL com migrations Flyway.
-
-> **Status atual:** infraestrutura e organização em camadas prontas. Regras de negócio, CRUD e fluxo de matrícula ainda **não** foram implementados.
+Monólito com backend Java/Spring Boot, frontend Angular (TypeScript) e PostgreSQL com migrations Flyway.
 
 ---
 
@@ -14,20 +12,20 @@ Gestão de matrículas acadêmicas com as entidades:
 
 | Entidade   | Responsabilidade                          |
 |------------|-------------------------------------------|
-| Aluno      | Cadastro de estudantes                    |
+| Usuário    | Alunos e administradores                  |
 | Curso      | Cursos oferecidos                         |
 | Disciplina | Disciplinas vinculadas ao currículo       |
 | Turma      | Oferta de disciplina com limite de vagas  |
 | Matrícula  | Vínculo aluno ↔ turma (com status)        |
 
-### Regras de negócio (a implementar)
+### Regras de negócio
 
 - Aluno só pode se matricular em turmas **abertas**
 - Turma possui **limite de vagas**
 - Aluno **não** pode se matricular duas vezes na mesma turma
-- Status da matrícula: `PENDENTE`, `CONFIRMADA`, `CANCELADA`
+- Status da matrícula: `PENDING`, `CONFIRMED`, `CANCELLED`
 - Confirmar matrícula **consome** vaga; cancelar matrícula confirmada **libera** vaga
-- Consultas de matrículas por aluno e por turma
+- Listagens paginadas (`page`, `size`) via `PageResponse`
 
 ---
 
@@ -39,45 +37,40 @@ Gestão de matrículas acadêmicas com as entidades:
 | Persistência  | JPA/Hibernate + PostgreSQL 16                   |
 | Migrations    | Flyway                                          |
 | API docs      | springdoc-openapi (Swagger UI)                  |
-| Frontend      | TypeScript, React 18, Vite                      |
+| Frontend      | Angular 18, TypeScript, SCSS                    |
 | Ambiente      | Docker Compose (PostgreSQL)                     |
 
 ---
 
 ## Arquitetura (camadas)
 
-Backend organizado em camadas, conforme expectativa do desafio:
+Backend organizado em camadas:
 
 ```
 backend/src/main/java/br/com/techne/lyceum/academic/
 ├── controller/      # API REST — recebe/retorna DTOs
-├── application/     # Use cases / services — orquestra regras e transações
+├── service/         # Use cases — orquestra regras e transações
 ├── domain/          # Entidades, enums e invariantes de negócio
 ├── repository/      # Spring Data JPA
-├── dto/             # Contratos de request/response
+├── dto/             # Contratos de request/response (inclui PageResponse)
 ├── config/          # OpenAPI, CORS e beans transversais
-└── shared/          # Tratamento de erros e utilitários compartilhados
+├── security/        # JWT e autorização
+└── shared/          # Tratamento de erros e utilitários
 ```
 
-**Fluxo pretendido:** `Controller → Application Service → Domain / Repository`
-
-O frontend segue a mesma ideia de responsabilidades claras:
+Frontend:
 
 ```
-frontend/src/
-├── pages/        # Telas
-├── components/   # Componentes reutilizáveis
-├── services/     # Consumo HTTP da API
-└── types/        # Tipos TypeScript do contrato
+frontend/src/app/
+├── core/           # AuthService, interceptor JWT, guards
+├── layout/         # Shell com sidebar constante
+├── features/       # Telas por domínio
+├── services/       # Consumo HTTP tipado da API
+├── shared/         # Alert, confirm-modal, pager
+└── models/         # Tipos TypeScript do contrato
 ```
 
-Migrations Flyway ficam em:
-
-```
-backend/src/main/resources/db/migration/
-```
-
-Convenção: `V{versão}__{descricao}.sql` (ex.: `V1__create_schema.sql`).
+Migrations Flyway: `backend/src/main/resources/db/migration/`
 
 ---
 
@@ -94,25 +87,15 @@ Convenção: `V{versão}__{descricao}.sql` (ex.: `V1__create_schema.sql`).
 
 ### 1. Banco de dados (Docker Compose)
 
-Na raiz do repositório:
-
 ```bash
 docker compose up -d
 ```
-
-Isso sobe o PostgreSQL em `localhost:5432` com:
 
 | Variável | Valor                   |
 |----------|-------------------------|
 | Database | `academic_registration` |
 | User     | `academic`              |
 | Password | `academic`              |
-
-Verificar saúde do container:
-
-```bash
-docker compose ps
-```
 
 ### 2. Backend
 
@@ -121,88 +104,45 @@ cd backend
 mvn spring-boot:run
 ```
 
-- API base: [http://localhost:8080/api](http://localhost:8080/api)
-- Swagger UI: [http://localhost:8080/api/swagger-ui.html](http://localhost:8080/api/swagger-ui.html)
-- OpenAPI JSON: [http://localhost:8080/api/v3/api-docs](http://localhost:8080/api/v3/api-docs)
-
-Variáveis opcionais: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `SERVER_PORT`, `CORS_ALLOWED_ORIGINS`.
+- API base: http://localhost:8080/api
+- Swagger UI: http://localhost:8080/api/swagger-ui.html
+- Admin seed: `admin@admin` / `admin`
+- CORS padrão: `http://localhost:4200`
 
 ### 3. Frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev
+npm start
 ```
 
-Aplicação em [http://localhost:5173](http://localhost:5173).
+Aplicação em http://localhost:4200.
 
-Configure a URL da API copiando o exemplo de env:
-
-```bash
-cp .env.example .env
-```
-
-(`VITE_API_BASE_URL` padrão: `http://localhost:8080/api`)
+URL da API: `frontend/src/environments/environment.development.ts`.
 
 ---
 
 ## Testes
 
-### Backend
-
 ```bash
-cd backend
-mvn test
-```
+# Backend
+cd backend && mvn test
 
-Hoje há apenas um smoke test de scaffold. Testes unitários das regras de matrícula e testes de integração/API serão adicionados na implementação das funcionalidades.
-
-### Frontend
-
-```bash
+# Frontend
 cd frontend
+npm run test -- --watch=false --browsers=ChromeHeadless
 npm run build
 ```
 
 ---
 
-## Decisões técnicas
+## Papéis no frontend
 
-| Decisão | Motivo |
-|---------|--------|
-| Monólito modular em camadas | Atende o nível Pleno sem complexidade distribuída injustificada |
-| `application` (use cases) em vez de “service anêmico solto” | Clareza de responsabilidades e testabilidade das regras |
-| Flyway + `ddl-auto: validate` | Evolução explícita do schema; Hibernate não altera o banco sozinho |
-| PostgreSQL via Docker Compose | Ambiente reproduzível, exigido pela especificação |
-| springdoc-openapi | Documentação e exploração da API sem custo de manutenção alto |
-| React + Vite + TypeScript | Frontend tipado, com componentes/páginas/services separados |
-| Context-path `/api` | Separa contrato da API e facilita proxy/CORS no frontend |
-
-### Proteção da regra de vagas (planejado)
-
-Ainda não implementado. A intenção é concentrar confirmação/cancelamento em serviço de aplicação **transacional**, com checagem de vagas e unicidade aluno+turma no domínio/persistência (constraint + regra), cobertos por testes.
-
----
-
-## Limitações conhecidas (estado atual)
-
-- Sem CRUD de entidades e sem fluxo de matrícula
-- Sem migrations de schema (pasta Flyway preparada)
-- Sem tratamento padronizado de erros de domínio (pacote `shared` reservado)
-- Sem testes das regras críticas de matrícula
-- Frontend apenas com estrutura e placeholder
-
----
-
-## Uso de IA
-
-| Item | Detalhe |
-|------|---------|
-| Ferramenta | Cursor (agente de código) |
-| Onde foi usada | Scaffold do monólito, camadas do backend, Docker Compose, configs Spring/Flyway/OpenAPI/CORS, estrutura do frontend e este README |
-| Revisão manual | Alinhamento com o documento do desafio; escolha de stack frontend (TS/React); decisão de **não** implementar regras ainda |
-| Trechos mais críticos (futuros) | Controle transacional de vagas, unicidade de matrícula, confirmação/cancelamento e testes dessas regras — devem ser revisados com cuidado humano |
+| Role | Home | Navegação |
+|------|------|-----------|
+| STUDENT | Matrículas | Perfil, Matrículas, Sair |
+| ADMIN | Matrículas | Perfil, Matrículas, Usuários, Cursos, Disciplinas, Turmas, Sair |
 
 ---
 
@@ -210,19 +150,9 @@ Ainda não implementado. A intenção é concentrar confirmação/cancelamento e
 
 ```
 academic_registration_app/
-├── backend/                 # Spring Boot
-├── frontend/                # React + TypeScript (Vite)
-├── docker-compose.yml       # PostgreSQL
-├── README.md
-└── DESAFI_2 - ...DOC        # Especificação do desafio
+├── backend/
+├── frontend/
+├── frontend-patterns/
+├── docker-compose.yml
+└── README.md
 ```
-
----
-
-## Próximos passos
-
-1. Migrations Flyway (schema das entidades)
-2. Domínio + repositories + DTOs + services
-3. Endpoints REST e tratamento de erros
-4. Testes das regras de matrícula
-5. Telas do frontend consumindo a API

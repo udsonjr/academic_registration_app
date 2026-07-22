@@ -2,15 +2,17 @@ package br.com.techne.lyceum.academic.controller;
 
 import br.com.techne.lyceum.academic.dto.CreateEnrollmentRequest;
 import br.com.techne.lyceum.academic.dto.EnrollmentDTO;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.security.SecurityUtils;
 import br.com.techne.lyceum.academic.service.EnrollmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,19 +40,21 @@ public class EnrollmentController {
             summary = "List enrollments",
             description =
                     "ADMIN: all enrollments, optionally filtered. STUDENT: only own enrollments.")
-    public List<EnrollmentDTO> getEnrollments(
+    public PageResponse<EnrollmentDTO> getEnrollments(
             @RequestParam(required = false) UUID userPublicId,
-            @RequestParam(required = false) UUID classGroupPublicId) {
+            @RequestParam(required = false) UUID classGroupPublicId,
+            @PageableDefault(size = 10) Pageable pageable) {
         if (!SecurityUtils.isAdmin()) {
-            return enrollmentService.getEnrollmentsByUser(SecurityUtils.currentUserPublicId());
+            return enrollmentService.getEnrollmentsByUser(
+                    SecurityUtils.currentUserPublicId(), pageable);
         }
         if (userPublicId != null) {
-            return enrollmentService.getEnrollmentsByUser(userPublicId);
+            return enrollmentService.getEnrollmentsByUser(userPublicId, pageable);
         }
         if (classGroupPublicId != null) {
-            return enrollmentService.getEnrollmentsByClassGroup(classGroupPublicId);
+            return enrollmentService.getEnrollmentsByClassGroup(classGroupPublicId, pageable);
         }
-        return enrollmentService.getEnrollments();
+        return enrollmentService.getEnrollments(pageable);
     }
 
     @PostMapping(

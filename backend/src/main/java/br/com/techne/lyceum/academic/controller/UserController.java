@@ -1,6 +1,7 @@
 package br.com.techne.lyceum.academic.controller;
 
 import br.com.techne.lyceum.academic.dto.CreateUserRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateUserRequest;
 import br.com.techne.lyceum.academic.dto.UserDTO;
 import br.com.techne.lyceum.academic.service.UserService;
@@ -8,9 +9,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,9 +37,9 @@ public class UserController {
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "List users", description = "Returns all registered users (ADMIN only)")
-    public List<UserDTO> getUsers() {
-        return userService.getUsers();
+    @Operation(summary = "List users", description = "Returns paginated users (ADMIN only)")
+    public PageResponse<UserDTO> getUsers(@PageableDefault(size = 10) Pageable pageable) {
+        return userService.getUsers(pageable);
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)

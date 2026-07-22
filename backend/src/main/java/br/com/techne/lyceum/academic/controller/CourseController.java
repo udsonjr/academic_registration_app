@@ -2,15 +2,17 @@ package br.com.techne.lyceum.academic.controller;
 
 import br.com.techne.lyceum.academic.dto.CourseDTO;
 import br.com.techne.lyceum.academic.dto.CreateCourseRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateCourseRequest;
 import br.com.techne.lyceum.academic.service.CourseService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,9 +36,9 @@ public class CourseController {
     private final CourseService courseService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "List courses", description = "Returns all registered courses")
-    public List<CourseDTO> getCourses() {
-        return courseService.getCourses();
+    @Operation(summary = "List courses", description = "Returns paginated courses")
+    public PageResponse<CourseDTO> getCourses(@PageableDefault(size = 10) Pageable pageable) {
+        return courseService.getCourses(pageable);
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)

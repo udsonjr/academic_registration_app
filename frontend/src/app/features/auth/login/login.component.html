@@ -1,0 +1,31 @@
+<div class="auth-page">
+  <div class="auth-card">
+    <h1>Entrar</h1>
+    <p class="subtitle">Acesse o sistema de matrículas acadêmicas.</p>
+
+    <form class="form-grid" [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-field">
+        <label for="email">E-mail</label>
+        <input id="email" type="email" formControlName="email" autocomplete="username" />
+        @if (form.controls.email.touched && form.controls.email.invalid) {
+          <p class="field-error">Informe um e-mail válido.</p>
+        }
+      </div>
+      <div class="form-field">
+        <label for="password">Senha</label>
+        <input id="password" type="password" formControlName="password" autocomplete="current-password" />
+        @if (form.controls.password.touched && form.controls.password.invalid) {
+          <p class="field-error">A senha é obrigatória.</p>
+        }
+      </div>
+      <button class="btn" type="submit" [disabled]="loading">
+        {{ loading ? 'Entrando...' : 'Entrar' }}
+      </button>
+    </form>
+
+    <p class="auth-footer">
+      Não tem conta?
+      <a routerLink="/register">Cadastre-se</a>
+    </p>
+  </div>
+</div>

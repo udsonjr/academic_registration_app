@@ -1,0 +1,108 @@
+<div class="page-header">
+  <div>
+    <h1>Turmas</h1>
+    <p>Gerencie turmas, vagas e abertura de matrícula.</p>
+  </div>
+  <button type="button" class="btn" (click)="openCreate()">Nova turma</button>
+</div>
+
+@if (loading) {
+  <p class="empty-state">Carregando...</p>
+} @else if (classGroups.length === 0) {
+  <p class="empty-state">Nenhuma turma encontrada.</p>
+} @else {
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Disciplina</th>
+          <th>Vagas</th>
+          <th>Aberta</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (group of classGroups; track group.publicId) {
+          <tr>
+            <td>{{ group.name }}</td>
+            <td>{{ group.subject.name }}</td>
+            <td>{{ group.enrolledStudents }}/{{ group.vacancyLimit }}</td>
+            <td>{{ group.openForEnrollment ? 'Sim' : 'Não' }}</td>
+            <td>
+              <div class="row-actions">
+                <button type="button" class="btn btn-ghost" (click)="openEdit(group)">Editar</button>
+                <button type="button" class="btn btn-danger" (click)="requestDelete(group)">Excluir</button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-pager
+    [page]="page"
+    [totalPages]="totalPages"
+    [totalElements]="totalElements"
+    (pageChange)="onPageChange($event)"
+  />
+}
+
+@if (formOpen) {
+  <div class="modal-backdrop" (click)="closeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>{{ editing ? 'Editar turma' : 'Nova turma' }}</h3>
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-field">
+          <label>Nome</label>
+          <input type="text" formControlName="name" />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <p class="field-error">O nome é obrigatório.</p>
+          }
+        </div>
+        <div class="form-field">
+          <label>Descrição <span class="optional-tag">(opcional)</span></label>
+          <textarea formControlName="description"></textarea>
+        </div>
+        <div class="form-field">
+          <label>Disciplina</label>
+          <select formControlName="subjectPublicId">
+            <option value="">Selecione...</option>
+            @for (subject of subjects; track subject.publicId) {
+              <option [value]="subject.publicId">
+                {{ subject.name }} ({{ subject.course.name }})
+              </option>
+            }
+          </select>
+          @if (form.controls.subjectPublicId.touched && form.controls.subjectPublicId.invalid) {
+            <p class="field-error">Selecione uma disciplina.</p>
+          }
+        </div>
+        <div class="form-field">
+          <label>Limite de vagas</label>
+          <input type="number" min="1" formControlName="vacancyLimit" />
+        </div>
+        <label class="checkbox-row">
+          <input type="checkbox" formControlName="openForEnrollment" />
+          Aberta para matrícula
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" (click)="closeForm()">Cancelar</button>
+          <button type="submit" class="btn" [disabled]="saving">
+            {{ saving ? 'Salvando...' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<app-confirm-modal
+  [open]="!!deleteTarget"
+  title="Excluir turma"
+  message="Deseja excluir esta turma?"
+  confirmLabel="Excluir"
+  [loading]="deleting"
+  (confirm)="confirmDelete()"
+  (cancel)="closeDelete()"
+/>

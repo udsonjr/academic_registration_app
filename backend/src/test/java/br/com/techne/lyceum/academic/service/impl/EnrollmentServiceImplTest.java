@@ -19,6 +19,7 @@ import br.com.techne.lyceum.academic.domain.User;
 import br.com.techne.lyceum.academic.domain.UserRole;
 import br.com.techne.lyceum.academic.dto.CreateEnrollmentRequest;
 import br.com.techne.lyceum.academic.dto.EnrollmentDTO;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.EnrollmentRepository;
 import br.com.techne.lyceum.academic.repository.UserRepository;
@@ -36,6 +37,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -128,12 +132,14 @@ class EnrollmentServiceImplTest {
         Enrollment enrollment2 = mockedEnrollment(user, classGroup, EnrollmentStatus.CONFIRMED);
         enrollment2.setId(2L);
         enrollment2.setPublicId(UUID.randomUUID());
-        when(enrollmentRepository.findAll()).thenReturn(List.of(enrollment1, enrollment2));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(enrollmentRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(enrollment1, enrollment2), pageable, 2));
 
-        List<EnrollmentDTO> result = enrollmentService.getEnrollments();
+        PageResponse<EnrollmentDTO> result = enrollmentService.getEnrollments(pageable);
 
-        assertEquals(2, result.size());
-        verify(enrollmentRepository).findAll();
+        assertEquals(2, result.content().size());
+        verify(enrollmentRepository).findAll(pageable);
     }
 
     @Test
@@ -142,14 +148,16 @@ class EnrollmentServiceImplTest {
         authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.PENDING);
+        Pageable pageable = PageRequest.of(0, 10);
         when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
-        when(enrollmentRepository.findAllByUserId(user.getId())).thenReturn(List.of(enrollment));
+        when(enrollmentRepository.findAllByUserId(user.getId(), pageable))
+                .thenReturn(new PageImpl<>(List.of(enrollment), pageable, 1));
 
-        List<EnrollmentDTO> result = enrollmentService.getEnrollments();
+        PageResponse<EnrollmentDTO> result = enrollmentService.getEnrollments(pageable);
 
-        assertEquals(1, result.size());
-        assertEquals(user.getPublicId(), result.get(0).user().publicId());
-        verify(enrollmentRepository, never()).findAll();
+        assertEquals(1, result.content().size());
+        assertEquals(user.getPublicId(), result.content().get(0).user().publicId());
+        verify(enrollmentRepository, never()).findAll(pageable);
     }
 
     @Test
@@ -428,23 +436,27 @@ class EnrollmentServiceImplTest {
         authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.PENDING);
+        Pageable pageable = PageRequest.of(0, 10);
         when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
-        when(enrollmentRepository.findAllByUserId(user.getId())).thenReturn(List.of(enrollment));
+        when(enrollmentRepository.findAllByUserId(user.getId(), pageable))
+                .thenReturn(new PageImpl<>(List.of(enrollment), pageable, 1));
 
-        List<EnrollmentDTO> result = enrollmentService.getEnrollmentsByUser(user.getPublicId());
+        PageResponse<EnrollmentDTO> result =
+                enrollmentService.getEnrollmentsByUser(user.getPublicId(), pageable);
 
-        assertEquals(1, result.size());
-        assertEquals(user.getPublicId(), result.get(0).user().publicId());
+        assertEquals(1, result.content().size());
+        assertEquals(user.getPublicId(), result.content().get(0).user().publicId());
     }
 
     @Test
     void getEnrollmentsByUser_whenOtherStudent_throwsForbidden() {
         authenticateAs(mockedUser());
+        Pageable pageable = PageRequest.of(0, 10);
 
         ForbiddenException ex =
                 assertThrows(
                         ForbiddenException.class,
-                        () -> enrollmentService.getEnrollmentsByUser(UUID.randomUUID()));
+                        () -> enrollmentService.getEnrollmentsByUser(UUID.randomUUID(), pageable));
 
         assertEquals("ACCESS_DENIED", ex.getCode());
     }
@@ -453,12 +465,15 @@ class EnrollmentServiceImplTest {
     void getEnrollmentsByUser_whenNoEnrollments_returnsEmptyList() {
         User user = mockedUser();
         authenticateAs(user);
+        Pageable pageable = PageRequest.of(0, 10);
         when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
-        when(enrollmentRepository.findAllByUserId(user.getId())).thenReturn(List.of());
+        when(enrollmentRepository.findAllByUserId(user.getId(), pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-        List<EnrollmentDTO> result = enrollmentService.getEnrollmentsByUser(user.getPublicId());
+        PageResponse<EnrollmentDTO> result =
+                enrollmentService.getEnrollmentsByUser(user.getPublicId(), pageable);
 
-        assertTrue(result.isEmpty());
+        assertTrue(result.content().isEmpty());
     }
 
     @Test
@@ -467,26 +482,30 @@ class EnrollmentServiceImplTest {
         User user = mockedUser();
         ClassGroup classGroup = mockedClassGroup(10, 40);
         Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.CONFIRMED);
+        Pageable pageable = PageRequest.of(0, 10);
         when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
                 .thenReturn(classGroup);
-        when(enrollmentRepository.findAllByClassGroupId(classGroup.getId()))
-                .thenReturn(List.of(enrollment));
+        when(enrollmentRepository.findAllByClassGroupId(classGroup.getId(), pageable))
+                .thenReturn(new PageImpl<>(List.of(enrollment), pageable, 1));
 
-        List<EnrollmentDTO> result =
-                enrollmentService.getEnrollmentsByClassGroup(classGroup.getPublicId());
+        PageResponse<EnrollmentDTO> result =
+                enrollmentService.getEnrollmentsByClassGroup(classGroup.getPublicId(), pageable);
 
-        assertEquals(1, result.size());
-        assertEquals(EnrollmentStatus.CONFIRMED, result.get(0).status());
+        assertEquals(1, result.content().size());
+        assertEquals(EnrollmentStatus.CONFIRMED, result.content().get(0).status());
     }
 
     @Test
     void getEnrollmentsByClassGroup_whenStudent_throwsForbidden() {
         authenticateAs(mockedUser());
+        Pageable pageable = PageRequest.of(0, 10);
 
         ForbiddenException ex =
                 assertThrows(
                         ForbiddenException.class,
-                        () -> enrollmentService.getEnrollmentsByClassGroup(UUID.randomUUID()));
+                        () ->
+                                enrollmentService.getEnrollmentsByClassGroup(
+                                        UUID.randomUUID(), pageable));
 
         assertEquals("ACCESS_DENIED", ex.getCode());
     }
