@@ -89,7 +89,8 @@ class SubjectServiceImplTest {
     @Test
     void getSubjects_whenEmpty_returnsEmptyList() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(subjectRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(), pageable, 0));
+        when(subjectRepository.findAll(pageable))
+                .thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
         PageResponse<SubjectDTO> result = subjectService.getSubjects(null, pageable);
 
