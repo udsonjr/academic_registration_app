@@ -16,7 +16,7 @@ describe('apiFetch', () => {
       }),
     )
 
-    await expect(apiFetch<{ name: string }>('/students')).resolves.toEqual({ name: 'Ada' })
+    await expect(apiFetch<{ name: string }>('/users')).resolves.toEqual({ name: 'Ada' })
   })
 
   it('throws when the response is not successful', async () => {
@@ -29,7 +29,7 @@ describe('apiFetch', () => {
       }),
     )
 
-    await expect(apiFetch('/students')).rejects.toThrow('server error')
+    await expect(apiFetch('/users')).rejects.toThrow('server error')
   })
 
   it('returns undefined for 204 responses', async () => {
@@ -41,6 +41,6 @@ describe('apiFetch', () => {
       }),
     )
 
-    await expect(apiFetch('/students/1')).resolves.toBeUndefined()
+    await expect(apiFetch('/users/1')).resolves.toBeUndefined()
   })
 })

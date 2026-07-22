@@ -15,7 +15,7 @@ public interface EnrollmentService {
 
     EnrollmentDTO cancelEnrollment(UUID publicId);
 
-    List<EnrollmentDTO> getEnrollmentsByStudent(UUID studentPublicId);
+    List<EnrollmentDTO> getEnrollmentsByUser(UUID userPublicId);
 
     List<EnrollmentDTO> getEnrollmentsByClassGroup(UUID classGroupPublicId);
 }

@@ -2,8 +2,10 @@ package br.com.techne.lyceum.academic.controller;
 
 import br.com.techne.lyceum.academic.dto.CreateEnrollmentRequest;
 import br.com.techne.lyceum.academic.dto.EnrollmentDTO;
+import br.com.techne.lyceum.academic.security.SecurityUtils;
 import br.com.techne.lyceum.academic.service.EnrollmentService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -11,6 +13,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/enrollments")
 @RequiredArgsConstructor
 @Tag(name = "Enrollments", description = "Enrollment management")
+@SecurityRequirement(name = "bearerAuth")
 public class EnrollmentController {
 
     private final EnrollmentService enrollmentService;
@@ -33,12 +37,15 @@ public class EnrollmentController {
     @Operation(
             summary = "List enrollments",
             description =
-                    "Returns all enrollments, optionally filtered by student or by class group")
+                    "ADMIN: all enrollments, optionally filtered. STUDENT: only own enrollments.")
     public List<EnrollmentDTO> getEnrollments(
-            @RequestParam(required = false) UUID studentPublicId,
+            @RequestParam(required = false) UUID userPublicId,
             @RequestParam(required = false) UUID classGroupPublicId) {
-        if (studentPublicId != null) {
-            return enrollmentService.getEnrollmentsByStudent(studentPublicId);
+        if (!SecurityUtils.isAdmin()) {
+            return enrollmentService.getEnrollmentsByUser(SecurityUtils.currentUserPublicId());
+        }
+        if (userPublicId != null) {
+            return enrollmentService.getEnrollmentsByUser(userPublicId);
         }
         if (classGroupPublicId != null) {
             return enrollmentService.getEnrollmentsByClassGroup(classGroupPublicId);
@@ -58,9 +65,11 @@ public class EnrollmentController {
     }
 
     @PatchMapping(value = "/{publicId}/confirm", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Confirm enrollment",
-            description = "Confirms a pending enrollment and consumes a class group vacancy")
+            description =
+                    "Confirms a pending enrollment and consumes a class group vacancy (ADMIN)")
     public EnrollmentDTO confirmEnrollment(@PathVariable UUID publicId) {
         return enrollmentService.confirmEnrollment(publicId);
     }

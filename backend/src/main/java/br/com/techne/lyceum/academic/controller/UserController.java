@@ -1,9 +1,9 @@
 package br.com.techne.lyceum.academic.controller;
 
-import br.com.techne.lyceum.academic.dto.CourseDTO;
-import br.com.techne.lyceum.academic.dto.CreateCourseRequest;
-import br.com.techne.lyceum.academic.dto.UpdateCourseRequest;
-import br.com.techne.lyceum.academic.service.CourseService;
+import br.com.techne.lyceum.academic.dto.CreateUserRequest;
+import br.com.techne.lyceum.academic.dto.UpdateUserRequest;
+import br.com.techne.lyceum.academic.dto.UserDTO;
+import br.com.techne.lyceum.academic.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,24 +25,25 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/courses")
+@RequestMapping("/users")
 @RequiredArgsConstructor
-@Tag(name = "Courses", description = "Course management")
+@Tag(name = "Users", description = "User management")
 @SecurityRequirement(name = "bearerAuth")
-public class CourseController {
+public class UserController {
 
-    private final CourseService courseService;
+    private final UserService userService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "List courses", description = "Returns all registered courses")
-    public List<CourseDTO> getCourses() {
-        return courseService.getCourses();
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "List users", description = "Returns all registered users (ADMIN only)")
+    public List<UserDTO> getUsers() {
+        return userService.getUsers();
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "Get course", description = "Returns a course by publicId")
-    public CourseDTO getCourse(@PathVariable UUID publicId) {
-        return courseService.getCourseByPublicId(publicId);
+    @Operation(summary = "Get user", description = "Returns a user by publicId (self or ADMIN)")
+    public UserDTO getUser(@PathVariable UUID publicId) {
+        return userService.getUserByPublicId(publicId);
     }
 
     @PostMapping(
@@ -50,29 +51,27 @@ public class CourseController {
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Create course", description = "Creates a new course")
-    public CourseDTO createCourse(@Valid @RequestBody CreateCourseRequest request) {
-        return courseService.createCourse(request);
+    @Operation(
+            summary = "Create user",
+            description = "Creates a new user with optional role (ADMIN only)")
+    public UserDTO createUser(@Valid @RequestBody CreateUserRequest request) {
+        return userService.createUser(request);
     }
 
     @PatchMapping(
             value = "/{publicId}",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Update course",
-            description = "Partially updates an existing course (only provided fields)")
-    public CourseDTO updateCourse(
-            @PathVariable UUID publicId, @Valid @RequestBody UpdateCourseRequest request) {
-        return courseService.updateCourse(publicId, request);
+    @Operation(summary = "Update user", description = "Partially updates a user (self or ADMIN)")
+    public UserDTO updateUser(
+            @PathVariable UUID publicId, @Valid @RequestBody UpdateUserRequest request) {
+        return userService.updateUser(publicId, request);
     }
 
     @DeleteMapping("/{publicId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Delete course", description = "Deletes a course by publicId")
-    public void deleteCourse(@PathVariable UUID publicId) {
-        courseService.deleteCourse(publicId);
+    @Operation(summary = "Delete user", description = "Soft-deletes a user (self or ADMIN)")
+    public void deleteUser(@PathVariable UUID publicId) {
+        userService.deleteUser(publicId);
     }
 }

@@ -5,12 +5,12 @@ import br.com.techne.lyceum.academic.domain.EnrollmentStatus;
 import java.util.UUID;
 
 public record EnrollmentDTO(
-        UUID publicId, StudentDTO student, ClassGroupDTO classGroup, EnrollmentStatus status) {
+        UUID publicId, UserDTO user, ClassGroupDTO classGroup, EnrollmentStatus status) {
 
     public static EnrollmentDTO from(Enrollment enrollment) {
         return new EnrollmentDTO(
                 enrollment.getPublicId(),
-                StudentDTO.from(enrollment.getStudent()),
+                UserDTO.from(enrollment.getUser()),
                 ClassGroupDTO.from(enrollment.getClassGroup()),
                 enrollment.getStatus());
     }

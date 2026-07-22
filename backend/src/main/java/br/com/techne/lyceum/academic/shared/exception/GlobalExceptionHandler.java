@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -30,6 +33,40 @@ public class GlobalExceptionHandler {
 
         return buildResponse(
                 ex.getStatus(), ex.getCode(), ex.getMessage(), request, traceId, List.of());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+            AccessDeniedException ex, HttpServletRequest request) {
+        String traceId = newTraceId();
+        log.warn("[{}] Access denied on {}: {}", traceId, request.getRequestURI(), ex.getMessage());
+
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                "ACCESS_DENIED",
+                "You do not have permission to perform this action",
+                request,
+                traceId,
+                List.of());
+    }
+
+    @ExceptionHandler({BadCredentialsException.class, AuthenticationException.class})
+    public ResponseEntity<ApiErrorResponse> handleAuthentication(
+            AuthenticationException ex, HttpServletRequest request) {
+        String traceId = newTraceId();
+        log.warn(
+                "[{}] Authentication failed on {}: {}",
+                traceId,
+                request.getRequestURI(),
+                ex.getMessage());
+
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                "UNAUTHORIZED",
+                "Invalid credentials or authentication required",
+                request,
+                traceId,
+                List.of());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

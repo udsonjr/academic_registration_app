@@ -5,6 +5,7 @@ import br.com.techne.lyceum.academic.dto.CreateClassGroupRequest;
 import br.com.techne.lyceum.academic.dto.UpdateClassGroupRequest;
 import br.com.techne.lyceum.academic.service.ClassGroupService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/class-groups")
 @RequiredArgsConstructor
 @Tag(name = "Class Groups", description = "Class group management")
+@SecurityRequirement(name = "bearerAuth")
 public class ClassGroupController {
 
     private final ClassGroupService classGroupService;
@@ -46,6 +49,7 @@ public class ClassGroupController {
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create class group", description = "Creates a new class group")
     public ClassGroupDTO createClassGroup(@Valid @RequestBody CreateClassGroupRequest request) {
         return classGroupService.createClassGroup(request);
@@ -55,6 +59,7 @@ public class ClassGroupController {
             value = "/{publicId}",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Update class group",
             description = "Partially updates an existing class group (only provided fields)")
@@ -65,6 +70,7 @@ public class ClassGroupController {
 
     @DeleteMapping("/{publicId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete class group", description = "Deletes a class group by publicId")
     public void deleteClassGroup(@PathVariable UUID publicId) {
         classGroupService.deleteClassGroup(publicId);

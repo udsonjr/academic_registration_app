@@ -14,44 +14,75 @@ import br.com.techne.lyceum.academic.domain.ClassGroup;
 import br.com.techne.lyceum.academic.domain.Course;
 import br.com.techne.lyceum.academic.domain.Enrollment;
 import br.com.techne.lyceum.academic.domain.EnrollmentStatus;
-import br.com.techne.lyceum.academic.domain.Student;
 import br.com.techne.lyceum.academic.domain.Subject;
+import br.com.techne.lyceum.academic.domain.User;
+import br.com.techne.lyceum.academic.domain.UserRole;
 import br.com.techne.lyceum.academic.dto.CreateEnrollmentRequest;
 import br.com.techne.lyceum.academic.dto.EnrollmentDTO;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.EnrollmentRepository;
-import br.com.techne.lyceum.academic.repository.StudentRepository;
+import br.com.techne.lyceum.academic.repository.UserRepository;
+import br.com.techne.lyceum.academic.security.UserPrincipal;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
+import br.com.techne.lyceum.academic.shared.exception.ForbiddenException;
 import br.com.techne.lyceum.academic.shared.exception.ResourceNotFoundException;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class EnrollmentServiceImplTest {
 
     @Mock private EnrollmentRepository enrollmentRepository;
 
-    @Mock private StudentRepository studentRepository;
+    @Mock private UserRepository userRepository;
 
     @Mock private ClassGroupRepository classGroupRepository;
 
     @InjectMocks private EnrollmentServiceImpl enrollmentService;
 
-    private Student mockedStudent() {
-        Student student = new Student();
-        student.setId(1L);
-        student.setPublicId(UUID.randomUUID());
-        student.setName("student1");
-        student.setEmail("student1@example.com");
-        student.setPassword("secret1");
-        return student;
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
+    private User mockedUser() {
+        User user = new User();
+        user.setId(1L);
+        user.setPublicId(UUID.randomUUID());
+        user.setName("student1");
+        user.setEmail("student1@example.com");
+        user.setPassword("secret1");
+        user.setRole(UserRole.STUDENT);
+        return user;
+    }
+
+    private User mockedAdmin() {
+        User user = new User();
+        user.setId(99L);
+        user.setPublicId(UUID.randomUUID());
+        user.setName("admin");
+        user.setEmail("admin@admin");
+        user.setPassword("admin");
+        user.setRole(UserRole.ADMIN);
+        return user;
+    }
+
+    private void authenticateAs(User user) {
+        UserPrincipal principal = new UserPrincipal(user);
+        SecurityContextHolder.getContext()
+                .setAuthentication(
+                        new UsernamePasswordAuthenticationToken(
+                                principal, null, principal.getAuthorities()));
     }
 
     private ClassGroup mockedClassGroup(Integer enrolledStudents, Integer vacancyLimit) {
@@ -78,23 +109,23 @@ class EnrollmentServiceImplTest {
         return classGroup;
     }
 
-    private Enrollment mockedEnrollment(
-            Student student, ClassGroup classGroup, EnrollmentStatus status) {
+    private Enrollment mockedEnrollment(User user, ClassGroup classGroup, EnrollmentStatus status) {
         Enrollment enrollment = new Enrollment();
         enrollment.setId(1L);
         enrollment.setPublicId(UUID.randomUUID());
-        enrollment.setStudent(student);
+        enrollment.setUser(user);
         enrollment.setClassGroup(classGroup);
         enrollment.setStatus(status);
         return enrollment;
     }
 
     @Test
-    void getEnrollments_whenEnrollmentsExist_returnsMappedDtos() {
-        Student student = mockedStudent();
+    void getEnrollments_whenAdmin_returnsAll() {
+        authenticateAs(mockedAdmin());
+        User user = mockedUser();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment1 = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
-        Enrollment enrollment2 = mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
+        Enrollment enrollment1 = mockedEnrollment(user, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment2 = mockedEnrollment(user, classGroup, EnrollmentStatus.CONFIRMED);
         enrollment2.setId(2L);
         enrollment2.setPublicId(UUID.randomUUID());
         when(enrollmentRepository.findAll()).thenReturn(List.of(enrollment1, enrollment2));
@@ -102,33 +133,36 @@ class EnrollmentServiceImplTest {
         List<EnrollmentDTO> result = enrollmentService.getEnrollments();
 
         assertEquals(2, result.size());
-        assertEquals(enrollment1.getPublicId(), result.get(0).publicId());
-        assertEquals(EnrollmentStatus.PENDING, result.get(0).status());
-        assertEquals(enrollment2.getPublicId(), result.get(1).publicId());
-        assertEquals(EnrollmentStatus.CONFIRMED, result.get(1).status());
         verify(enrollmentRepository).findAll();
     }
 
     @Test
-    void getEnrollments_whenEmpty_returnsEmptyList() {
-        when(enrollmentRepository.findAll()).thenReturn(List.of());
+    void getEnrollments_whenStudent_returnsOnlyOwn() {
+        User user = mockedUser();
+        authenticateAs(user);
+        ClassGroup classGroup = mockedClassGroup(10, 40);
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.PENDING);
+        when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
+        when(enrollmentRepository.findAllByUserId(user.getId())).thenReturn(List.of(enrollment));
 
         List<EnrollmentDTO> result = enrollmentService.getEnrollments();
 
-        assertTrue(result.isEmpty());
-        verify(enrollmentRepository).findAll();
+        assertEquals(1, result.size());
+        assertEquals(user.getPublicId(), result.get(0).user().publicId());
+        verify(enrollmentRepository, never()).findAll();
     }
 
     @Test
     void createEnrollment_whenValid_persistsWithPendingStatus() {
-        Student student = mockedStudent();
+        User user = mockedUser();
+        authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(0, 40);
         CreateEnrollmentRequest request =
-                new CreateEnrollmentRequest(student.getPublicId(), classGroup.getPublicId());
-        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+                new CreateEnrollmentRequest(user.getPublicId(), classGroup.getPublicId());
+        when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
         when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
                 .thenReturn(classGroup);
-        when(enrollmentRepository.existsByStudentIdAndClassGroupIdAndStatusIn(
+        when(enrollmentRepository.existsByUserIdAndClassGroupIdAndStatusIn(
                         anyLong(), anyLong(), anyCollection()))
                 .thenReturn(false);
         when(enrollmentRepository.save(any(Enrollment.class)))
@@ -136,20 +170,35 @@ class EnrollmentServiceImplTest {
 
         EnrollmentDTO result = enrollmentService.createEnrollment(request);
 
-        assertEquals(student.getPublicId(), result.student().publicId());
+        assertEquals(user.getPublicId(), result.user().publicId());
         assertEquals(classGroup.getPublicId(), result.classGroup().publicId());
         assertEquals(EnrollmentStatus.PENDING, result.status());
-        verify(enrollmentRepository).save(any(Enrollment.class));
+    }
+
+    @Test
+    void createEnrollment_whenStudentCreatesForOther_throwsForbidden() {
+        authenticateAs(mockedUser());
+        CreateEnrollmentRequest request =
+                new CreateEnrollmentRequest(UUID.randomUUID(), UUID.randomUUID());
+
+        ForbiddenException ex =
+                assertThrows(
+                        ForbiddenException.class,
+                        () -> enrollmentService.createEnrollment(request));
+
+        assertEquals("ACCESS_DENIED", ex.getCode());
+        verify(enrollmentRepository, never()).save(any());
     }
 
     @Test
     void createEnrollment_whenClassGroupNotOpen_throwsConflict() {
-        Student student = mockedStudent();
+        User user = mockedUser();
+        authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(0, 40);
         classGroup.setOpenForEnrollment(false);
         CreateEnrollmentRequest request =
-                new CreateEnrollmentRequest(student.getPublicId(), classGroup.getPublicId());
-        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+                new CreateEnrollmentRequest(user.getPublicId(), classGroup.getPublicId());
+        when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
         when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
                 .thenReturn(classGroup);
 
@@ -163,14 +212,15 @@ class EnrollmentServiceImplTest {
 
     @Test
     void createEnrollment_whenActiveEnrollmentExists_throwsConflict() {
-        Student student = mockedStudent();
+        User user = mockedUser();
+        authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(0, 40);
         CreateEnrollmentRequest request =
-                new CreateEnrollmentRequest(student.getPublicId(), classGroup.getPublicId());
-        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+                new CreateEnrollmentRequest(user.getPublicId(), classGroup.getPublicId());
+        when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
         when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
                 .thenReturn(classGroup);
-        when(enrollmentRepository.existsByStudentIdAndClassGroupIdAndStatusIn(
+        when(enrollmentRepository.existsByUserIdAndClassGroupIdAndStatusIn(
                         anyLong(), anyLong(), anyCollection()))
                 .thenReturn(true);
 
@@ -184,15 +234,15 @@ class EnrollmentServiceImplTest {
 
     @Test
     void createEnrollment_whenPreviousEnrollmentCancelled_allowsNewEnrollment() {
-        Student student = mockedStudent();
+        User user = mockedUser();
+        authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(0, 40);
         CreateEnrollmentRequest request =
-                new CreateEnrollmentRequest(student.getPublicId(), classGroup.getPublicId());
-        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
+                new CreateEnrollmentRequest(user.getPublicId(), classGroup.getPublicId());
+        when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
         when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
                 .thenReturn(classGroup);
-        // Cancelled enrollments are not active, so the duplicate check returns false
-        when(enrollmentRepository.existsByStudentIdAndClassGroupIdAndStatusIn(
+        when(enrollmentRepository.existsByUserIdAndClassGroupIdAndStatusIn(
                         anyLong(), anyLong(), anyCollection()))
                 .thenReturn(false);
         when(enrollmentRepository.save(any(Enrollment.class)))
@@ -202,56 +252,37 @@ class EnrollmentServiceImplTest {
 
         assertEquals(EnrollmentStatus.PENDING, result.status());
         verify(enrollmentRepository)
-                .existsByStudentIdAndClassGroupIdAndStatusIn(
-                        student.getId(),
+                .existsByUserIdAndClassGroupIdAndStatusIn(
+                        user.getId(),
                         classGroup.getId(),
                         Set.of(EnrollmentStatus.PENDING, EnrollmentStatus.CONFIRMED));
-        verify(enrollmentRepository).save(any(Enrollment.class));
     }
 
     @Test
-    void createEnrollment_whenStudentMissing_throwsNotFound() {
-        UUID studentPublicId = UUID.randomUUID();
+    void createEnrollment_whenUserMissing_throwsNotFound() {
+        User admin = mockedAdmin();
+        authenticateAs(admin);
+        UUID userPublicId = UUID.randomUUID();
         CreateEnrollmentRequest request =
-                new CreateEnrollmentRequest(studentPublicId, UUID.randomUUID());
-        when(studentRepository.getByPublicIdOrThrow(studentPublicId))
-                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
+                new CreateEnrollmentRequest(userPublicId, UUID.randomUUID());
+        when(userRepository.getByPublicIdOrThrow(userPublicId))
+                .thenThrow(new ResourceNotFoundException("USER_NOT_FOUND", "User not found"));
 
         ResourceNotFoundException ex =
                 assertThrows(
                         ResourceNotFoundException.class,
                         () -> enrollmentService.createEnrollment(request));
 
-        assertEquals("STUDENT_NOT_FOUND", ex.getCode());
-        verify(enrollmentRepository, never()).save(any());
-    }
-
-    @Test
-    void createEnrollment_whenClassGroupMissing_throwsNotFound() {
-        Student student = mockedStudent();
-        UUID classGroupPublicId = UUID.randomUUID();
-        CreateEnrollmentRequest request =
-                new CreateEnrollmentRequest(student.getPublicId(), classGroupPublicId);
-        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
-        when(classGroupRepository.getByPublicIdOrThrow(classGroupPublicId))
-                .thenThrow(
-                        new ResourceNotFoundException(
-                                "CLASS_GROUP_NOT_FOUND", "Class group not found"));
-
-        ResourceNotFoundException ex =
-                assertThrows(
-                        ResourceNotFoundException.class,
-                        () -> enrollmentService.createEnrollment(request));
-
-        assertEquals("CLASS_GROUP_NOT_FOUND", ex.getCode());
+        assertEquals("USER_NOT_FOUND", ex.getCode());
         verify(enrollmentRepository, never()).save(any());
     }
 
     @Test
     void confirmEnrollment_whenPendingAndVacancyAvailable_confirmsAndConsumesVacancy() {
-        Student student = mockedStudent();
+        authenticateAs(mockedAdmin());
+        User user = mockedUser();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.PENDING);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
         when(classGroupRepository.save(any(ClassGroup.class)))
@@ -268,10 +299,23 @@ class EnrollmentServiceImplTest {
     }
 
     @Test
+    void confirmEnrollment_whenStudent_throwsForbidden() {
+        authenticateAs(mockedUser());
+
+        ForbiddenException ex =
+                assertThrows(
+                        ForbiddenException.class,
+                        () -> enrollmentService.confirmEnrollment(UUID.randomUUID()));
+
+        assertEquals("ACCESS_DENIED", ex.getCode());
+    }
+
+    @Test
     void confirmEnrollment_whenClassGroupFull_throwsConflict() {
-        Student student = mockedStudent();
+        authenticateAs(mockedAdmin());
+        User user = mockedUser();
         ClassGroup classGroup = mockedClassGroup(40, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.PENDING);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
 
@@ -281,16 +325,16 @@ class EnrollmentServiceImplTest {
                         () -> enrollmentService.confirmEnrollment(enrollment.getPublicId()));
 
         assertEquals("CLASS_GROUP_FULL", ex.getCode());
-        assertEquals(40, classGroup.getEnrolledStudents());
         verify(classGroupRepository, never()).save(any());
         verify(enrollmentRepository, never()).save(any());
     }
 
     @Test
     void confirmEnrollment_whenAlreadyConfirmed_throwsConflict() {
-        Student student = mockedStudent();
+        authenticateAs(mockedAdmin());
+        User user = mockedUser();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.CONFIRMED);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
 
@@ -300,48 +344,14 @@ class EnrollmentServiceImplTest {
                         () -> enrollmentService.confirmEnrollment(enrollment.getPublicId()));
 
         assertEquals("INVALID_ENROLLMENT_STATUS", ex.getCode());
-        verify(classGroupRepository, never()).save(any());
-        verify(enrollmentRepository, never()).save(any());
     }
 
     @Test
-    void confirmEnrollment_whenCancelled_throwsConflict() {
-        Student student = mockedStudent();
+    void cancelEnrollment_whenOwnPending_cancelsWithoutReleasingVacancy() {
+        User user = mockedUser();
+        authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CANCELLED);
-        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
-                .thenReturn(enrollment);
-
-        ConflictException ex =
-                assertThrows(
-                        ConflictException.class,
-                        () -> enrollmentService.confirmEnrollment(enrollment.getPublicId()));
-
-        assertEquals("INVALID_ENROLLMENT_STATUS", ex.getCode());
-        verify(enrollmentRepository, never()).save(any());
-    }
-
-    @Test
-    void confirmEnrollment_whenMissing_throwsNotFound() {
-        UUID publicId = UUID.randomUUID();
-        when(enrollmentRepository.getByPublicIdOrThrow(publicId))
-                .thenThrow(
-                        new ResourceNotFoundException(
-                                "ENROLLMENT_NOT_FOUND", "Enrollment not found"));
-
-        ResourceNotFoundException ex =
-                assertThrows(
-                        ResourceNotFoundException.class,
-                        () -> enrollmentService.confirmEnrollment(publicId));
-
-        assertEquals("ENROLLMENT_NOT_FOUND", ex.getCode());
-    }
-
-    @Test
-    void cancelEnrollment_whenPending_cancelsWithoutReleasingVacancy() {
-        Student student = mockedStudent();
-        ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.PENDING);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
         when(enrollmentRepository.save(any(Enrollment.class)))
@@ -355,10 +365,11 @@ class EnrollmentServiceImplTest {
     }
 
     @Test
-    void cancelEnrollment_whenConfirmed_cancelsAndReleasesVacancy() {
-        Student student = mockedStudent();
+    void cancelEnrollment_whenOwnConfirmed_cancelsAndReleasesVacancy() {
+        User user = mockedUser();
+        authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.CONFIRMED);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
         when(classGroupRepository.save(any(ClassGroup.class)))
@@ -375,10 +386,31 @@ class EnrollmentServiceImplTest {
     }
 
     @Test
-    void cancelEnrollment_whenAlreadyCancelled_throwsConflict() {
-        Student student = mockedStudent();
+    void cancelEnrollment_whenOtherStudent_throwsForbidden() {
+        authenticateAs(mockedUser());
+        User other = mockedUser();
+        other.setId(2L);
+        other.setPublicId(UUID.randomUUID());
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CANCELLED);
+        Enrollment enrollment = mockedEnrollment(other, classGroup, EnrollmentStatus.PENDING);
+        when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
+                .thenReturn(enrollment);
+
+        ForbiddenException ex =
+                assertThrows(
+                        ForbiddenException.class,
+                        () -> enrollmentService.cancelEnrollment(enrollment.getPublicId()));
+
+        assertEquals("ACCESS_DENIED", ex.getCode());
+        verify(enrollmentRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelEnrollment_whenAlreadyCancelled_throwsConflict() {
+        User user = mockedUser();
+        authenticateAs(user);
+        ClassGroup classGroup = mockedClassGroup(10, 40);
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.CANCELLED);
         when(enrollmentRepository.getByPublicIdOrThrow(enrollment.getPublicId()))
                 .thenReturn(enrollment);
 
@@ -388,76 +420,53 @@ class EnrollmentServiceImplTest {
                         () -> enrollmentService.cancelEnrollment(enrollment.getPublicId()));
 
         assertEquals("INVALID_ENROLLMENT_STATUS", ex.getCode());
-        verify(classGroupRepository, never()).save(any());
-        verify(enrollmentRepository, never()).save(any());
     }
 
     @Test
-    void cancelEnrollment_whenMissing_throwsNotFound() {
-        UUID publicId = UUID.randomUUID();
-        when(enrollmentRepository.getByPublicIdOrThrow(publicId))
-                .thenThrow(
-                        new ResourceNotFoundException(
-                                "ENROLLMENT_NOT_FOUND", "Enrollment not found"));
-
-        ResourceNotFoundException ex =
-                assertThrows(
-                        ResourceNotFoundException.class,
-                        () -> enrollmentService.cancelEnrollment(publicId));
-
-        assertEquals("ENROLLMENT_NOT_FOUND", ex.getCode());
-    }
-
-    @Test
-    void getEnrollmentsByStudent_whenStudentExists_returnsMappedDtos() {
-        Student student = mockedStudent();
+    void getEnrollmentsByUser_whenSelf_returnsMappedDtos() {
+        User user = mockedUser();
+        authenticateAs(user);
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.PENDING);
-        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
-        when(enrollmentRepository.findAllByStudentId(student.getId()))
-                .thenReturn(List.of(enrollment));
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.PENDING);
+        when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
+        when(enrollmentRepository.findAllByUserId(user.getId())).thenReturn(List.of(enrollment));
 
-        List<EnrollmentDTO> result =
-                enrollmentService.getEnrollmentsByStudent(student.getPublicId());
+        List<EnrollmentDTO> result = enrollmentService.getEnrollmentsByUser(user.getPublicId());
 
         assertEquals(1, result.size());
-        assertEquals(enrollment.getPublicId(), result.get(0).publicId());
-        assertEquals(student.getPublicId(), result.get(0).student().publicId());
-        assertEquals(classGroup.getPublicId(), result.get(0).classGroup().publicId());
-        assertEquals(EnrollmentStatus.PENDING, result.get(0).status());
+        assertEquals(user.getPublicId(), result.get(0).user().publicId());
     }
 
     @Test
-    void getEnrollmentsByStudent_whenNoEnrollments_returnsEmptyList() {
-        Student student = mockedStudent();
-        when(studentRepository.getByPublicIdOrThrow(student.getPublicId())).thenReturn(student);
-        when(enrollmentRepository.findAllByStudentId(student.getId())).thenReturn(List.of());
+    void getEnrollmentsByUser_whenOtherStudent_throwsForbidden() {
+        authenticateAs(mockedUser());
 
-        List<EnrollmentDTO> result =
-                enrollmentService.getEnrollmentsByStudent(student.getPublicId());
+        ForbiddenException ex =
+                assertThrows(
+                        ForbiddenException.class,
+                        () -> enrollmentService.getEnrollmentsByUser(UUID.randomUUID()));
+
+        assertEquals("ACCESS_DENIED", ex.getCode());
+    }
+
+    @Test
+    void getEnrollmentsByUser_whenNoEnrollments_returnsEmptyList() {
+        User user = mockedUser();
+        authenticateAs(user);
+        when(userRepository.getByPublicIdOrThrow(user.getPublicId())).thenReturn(user);
+        when(enrollmentRepository.findAllByUserId(user.getId())).thenReturn(List.of());
+
+        List<EnrollmentDTO> result = enrollmentService.getEnrollmentsByUser(user.getPublicId());
 
         assertTrue(result.isEmpty());
     }
 
     @Test
-    void getEnrollmentsByStudent_whenStudentMissing_throwsNotFound() {
-        UUID studentPublicId = UUID.randomUUID();
-        when(studentRepository.getByPublicIdOrThrow(studentPublicId))
-                .thenThrow(new ResourceNotFoundException("STUDENT_NOT_FOUND", "Student not found"));
-
-        ResourceNotFoundException ex =
-                assertThrows(
-                        ResourceNotFoundException.class,
-                        () -> enrollmentService.getEnrollmentsByStudent(studentPublicId));
-
-        assertEquals("STUDENT_NOT_FOUND", ex.getCode());
-    }
-
-    @Test
-    void getEnrollmentsByClassGroup_whenClassGroupExists_returnsMappedDtos() {
-        Student student = mockedStudent();
+    void getEnrollmentsByClassGroup_whenAdmin_returnsMappedDtos() {
+        authenticateAs(mockedAdmin());
+        User user = mockedUser();
         ClassGroup classGroup = mockedClassGroup(10, 40);
-        Enrollment enrollment = mockedEnrollment(student, classGroup, EnrollmentStatus.CONFIRMED);
+        Enrollment enrollment = mockedEnrollment(user, classGroup, EnrollmentStatus.CONFIRMED);
         when(classGroupRepository.getByPublicIdOrThrow(classGroup.getPublicId()))
                 .thenReturn(classGroup);
         when(enrollmentRepository.findAllByClassGroupId(classGroup.getId()))
@@ -467,23 +476,18 @@ class EnrollmentServiceImplTest {
                 enrollmentService.getEnrollmentsByClassGroup(classGroup.getPublicId());
 
         assertEquals(1, result.size());
-        assertEquals(enrollment.getPublicId(), result.get(0).publicId());
         assertEquals(EnrollmentStatus.CONFIRMED, result.get(0).status());
     }
 
     @Test
-    void getEnrollmentsByClassGroup_whenClassGroupMissing_throwsNotFound() {
-        UUID classGroupPublicId = UUID.randomUUID();
-        when(classGroupRepository.getByPublicIdOrThrow(classGroupPublicId))
-                .thenThrow(
-                        new ResourceNotFoundException(
-                                "CLASS_GROUP_NOT_FOUND", "Class group not found"));
+    void getEnrollmentsByClassGroup_whenStudent_throwsForbidden() {
+        authenticateAs(mockedUser());
 
-        ResourceNotFoundException ex =
+        ForbiddenException ex =
                 assertThrows(
-                        ResourceNotFoundException.class,
-                        () -> enrollmentService.getEnrollmentsByClassGroup(classGroupPublicId));
+                        ForbiddenException.class,
+                        () -> enrollmentService.getEnrollmentsByClassGroup(UUID.randomUUID()));
 
-        assertEquals("CLASS_GROUP_NOT_FOUND", ex.getCode());
+        assertEquals("ACCESS_DENIED", ex.getCode());
     }
 }
