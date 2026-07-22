@@ -134,8 +134,7 @@ public class EnrollmentServiceImpl implements EnrollmentService {
     @Override
     @Transactional(readOnly = true)
     public List<EnrollmentDTO> getEnrollmentsByUser(UUID userPublicId) {
-        if (!SecurityUtils.isAdmin()
-                && !SecurityUtils.currentUserPublicId().equals(userPublicId)) {
+        if (!SecurityUtils.isAdmin() && !SecurityUtils.currentUserPublicId().equals(userPublicId)) {
             throw new ForbiddenException(
                     "ACCESS_DENIED", "Students can only view their own enrollments");
         }

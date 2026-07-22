@@ -41,9 +41,7 @@ public class UserController {
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-            summary = "Get user",
-            description = "Returns a user by publicId (self or ADMIN)")
+    @Operation(summary = "Get user", description = "Returns a user by publicId (self or ADMIN)")
     public UserDTO getUser(@PathVariable UUID publicId) {
         return userService.getUserByPublicId(publicId);
     }
@@ -64,9 +62,7 @@ public class UserController {
             value = "/{publicId}",
             consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(
-            summary = "Update user",
-            description = "Partially updates a user (self or ADMIN)")
+    @Operation(summary = "Update user", description = "Partially updates a user (self or ADMIN)")
     public UserDTO updateUser(
             @PathVariable UUID publicId, @Valid @RequestBody UpdateUserRequest request) {
         return userService.updateUser(publicId, request);
@@ -74,9 +70,7 @@ public class UserController {
 
     @DeleteMapping("/{publicId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(
-            summary = "Delete user",
-            description = "Soft-deletes a user (self or ADMIN)")
+    @Operation(summary = "Delete user", description = "Soft-deletes a user (self or ADMIN)")
     public void deleteUser(@PathVariable UUID publicId) {
         userService.deleteUser(publicId);
     }

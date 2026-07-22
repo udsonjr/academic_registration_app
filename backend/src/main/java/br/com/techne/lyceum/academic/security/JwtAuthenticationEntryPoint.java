@@ -31,14 +31,22 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
         Map<String, Object> body =
                 Map.of(
-                        "timestamp", Instant.now().toString(),
-                        "status", 401,
-                        "error", "Unauthorized",
-                        "code", "UNAUTHORIZED",
-                        "message", "Authentication is required",
-                        "path", request.getRequestURI(),
-                        "traceId", UUID.randomUUID().toString().substring(0, 8),
-                        "details", List.of());
+                        "timestamp",
+                        Instant.now().toString(),
+                        "status",
+                        401,
+                        "error",
+                        "Unauthorized",
+                        "code",
+                        "UNAUTHORIZED",
+                        "message",
+                        "Authentication is required",
+                        "path",
+                        request.getRequestURI(),
+                        "traceId",
+                        UUID.randomUUID().toString().substring(0, 8),
+                        "details",
+                        List.of());
 
         objectMapper.writeValue(response.getOutputStream(), body);
     }

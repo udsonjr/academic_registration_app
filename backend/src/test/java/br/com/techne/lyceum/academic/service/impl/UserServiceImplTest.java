@@ -3,7 +3,6 @@ package br.com.techne.lyceum.academic.service.impl;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -130,19 +129,17 @@ class UserServiceImplTest {
         authenticateAs(mockedAdmin());
         CreateUserRequest request =
                 new CreateUserRequest(
-                        "student1",
-                        "student1@example.com",
-                        "secret1",
-                        "secret1",
-                        UserRole.STUDENT);
+                        "student1", "student1@example.com", "secret1", "secret1", UserRole.STUDENT);
         when(userRepository.existsByEmail(request.email())).thenReturn(false);
         when(passwordEncoder.encode("secret1")).thenReturn("encoded");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
-            User saved = invocation.getArgument(0);
-            saved.setId(1L);
-            saved.setPublicId(UUID.randomUUID());
-            return saved;
-        });
+        when(userRepository.save(any(User.class)))
+                .thenAnswer(
+                        invocation -> {
+                            User saved = invocation.getArgument(0);
+                            saved.setId(1L);
+                            saved.setPublicId(UUID.randomUUID());
+                            return saved;
+                        });
 
         UserDTO result = userService.createUser(request);
 

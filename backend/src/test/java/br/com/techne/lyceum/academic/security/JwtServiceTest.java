@@ -18,8 +18,7 @@ class JwtServiceTest {
     void setUp() {
         String secret =
                 Base64.getEncoder()
-                        .encodeToString(
-                                "thisisasecretkeyforjwtsigningatleast256bits".getBytes());
+                        .encodeToString("thisisasecretkeyforjwtsigningatleast256bits".getBytes());
         jwtService = new JwtService(secret, 3600000L);
     }
 

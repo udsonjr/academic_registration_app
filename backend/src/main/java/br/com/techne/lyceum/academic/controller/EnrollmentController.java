@@ -68,7 +68,8 @@ public class EnrollmentController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Confirm enrollment",
-            description = "Confirms a pending enrollment and consumes a class group vacancy (ADMIN)")
+            description =
+                    "Confirms a pending enrollment and consumes a class group vacancy (ADMIN)")
     public EnrollmentDTO confirmEnrollment(@PathVariable UUID publicId) {
         return enrollmentService.confirmEnrollment(publicId);
     }

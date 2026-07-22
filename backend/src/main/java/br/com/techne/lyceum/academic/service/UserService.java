@@ -16,8 +16,8 @@ public interface UserService {
     UserDTO createUser(CreateUserRequest request);
 
     /**
-     * Creates a user without authorization checks. Callers must enforce access rules
-     * (e.g. admin-only or public self-registration as STUDENT).
+     * Creates a user without authorization checks. Callers must enforce access rules (e.g.
+     * admin-only or public self-registration as STUDENT).
      */
     UserDTO createUser(
             String name, String email, String password, String confirmPassword, UserRole role);

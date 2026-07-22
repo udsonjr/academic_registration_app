@@ -183,7 +183,8 @@ class EnrollmentServiceImplTest {
 
         ForbiddenException ex =
                 assertThrows(
-                        ForbiddenException.class, () -> enrollmentService.createEnrollment(request));
+                        ForbiddenException.class,
+                        () -> enrollmentService.createEnrollment(request));
 
         assertEquals("ACCESS_DENIED", ex.getCode());
         verify(enrollmentRepository, never()).save(any());

@@ -41,8 +41,7 @@ class AuthServiceImplTest {
     void setUp() {
         String secret =
                 Base64.getEncoder()
-                        .encodeToString(
-                                "thisisasecretkeyforjwtsigningatleast256bits".getBytes());
+                        .encodeToString("thisisasecretkeyforjwtsigningatleast256bits".getBytes());
         jwtService = new JwtService(secret, 86400000L);
         authService = new AuthServiceImpl(userService, authenticationManager, jwtService);
     }
@@ -59,7 +58,8 @@ class AuthServiceImplTest {
                         eq("secret1"),
                         eq(UserRole.STUDENT)))
                 .thenReturn(
-                        new UserDTO(publicId, "student1", "student1@example.com", UserRole.STUDENT));
+                        new UserDTO(
+                                publicId, "student1", "student1@example.com", UserRole.STUDENT));
 
         UserDTO result = authService.register(request);
 
@@ -67,19 +67,14 @@ class AuthServiceImplTest {
         assertEquals(UserRole.STUDENT, result.role());
         verify(userService)
                 .createUser(
-                        "student1",
-                        "student1@example.com",
-                        "secret1",
-                        "secret1",
-                        UserRole.STUDENT);
+                        "student1", "student1@example.com", "secret1", "secret1", UserRole.STUDENT);
     }
 
     @Test
     void register_whenEmailExists_propagatesConflict() {
         RegisterRequest request =
                 new RegisterRequest("student1", "student1@example.com", "secret1", "secret1");
-        when(userService.createUser(
-                        any(), any(), any(), any(), eq(UserRole.STUDENT)))
+        when(userService.createUser(any(), any(), any(), any(), eq(UserRole.STUDENT)))
                 .thenThrow(
                         new ConflictException(
                                 "EMAIL_ALREADY_REGISTERED", "Email already registered"));
@@ -94,8 +89,7 @@ class AuthServiceImplTest {
     void register_whenPasswordMismatch_propagatesBadRequest() {
         RegisterRequest request =
                 new RegisterRequest("student1", "student1@example.com", "secret1", "secret2");
-        when(userService.createUser(
-                        any(), any(), any(), any(), eq(UserRole.STUDENT)))
+        when(userService.createUser(any(), any(), any(), any(), eq(UserRole.STUDENT)))
                 .thenThrow(new BadRequestException("PASSWORD_MISMATCH", "Password mismatch"));
 
         BadRequestException ex =
