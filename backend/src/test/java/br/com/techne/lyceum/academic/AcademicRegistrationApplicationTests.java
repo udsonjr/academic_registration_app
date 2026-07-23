@@ -26,8 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 class AcademicRegistrationApplicationTests {
 
-    @Container
-    @ServiceConnection
+    @Container @ServiceConnection
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
 
     @Autowired private MockMvc mockMvc;
