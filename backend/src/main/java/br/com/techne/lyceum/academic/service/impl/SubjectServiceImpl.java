@@ -3,16 +3,18 @@ package br.com.techne.lyceum.academic.service.impl;
 import br.com.techne.lyceum.academic.domain.Course;
 import br.com.techne.lyceum.academic.domain.Subject;
 import br.com.techne.lyceum.academic.dto.CreateSubjectRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.SubjectDTO;
 import br.com.techne.lyceum.academic.dto.UpdateSubjectRequest;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.CourseRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
+import br.com.techne.lyceum.academic.repository.spec.SubjectSpecs;
 import br.com.techne.lyceum.academic.service.SubjectService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,8 +28,11 @@ public class SubjectServiceImpl implements SubjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SubjectDTO> getSubjects() {
-        return subjectRepository.findAll().stream().map(SubjectDTO::from).toList();
+    public PageResponse<SubjectDTO> getSubjects(
+            String name, UUID coursePublicId, Pageable pageable) {
+        return PageResponse.from(
+                subjectRepository.findAll(SubjectSpecs.withFilters(name, coursePublicId), pageable),
+                SubjectDTO::from);
     }
 
     @Override

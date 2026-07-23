@@ -1,6 +1,7 @@
 package br.com.techne.lyceum.academic.controller;
 
 import br.com.techne.lyceum.academic.dto.CreateSubjectRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.SubjectDTO;
 import br.com.techne.lyceum.academic.dto.UpdateSubjectRequest;
 import br.com.techne.lyceum.academic.service.SubjectService;
@@ -8,9 +9,11 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,9 +38,17 @@ public class SubjectController {
     private final SubjectService subjectService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "List subjects", description = "Returns all registered subjects")
-    public List<SubjectDTO> getSubjects() {
-        return subjectService.getSubjects();
+    @Operation(
+            summary = "List subjects",
+            description =
+                    "Returns paginated subjects with optional name and coursePublicId filters"
+                            + " (default sort: createdAt desc)")
+    public PageResponse<SubjectDTO> getSubjects(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) UUID coursePublicId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+                    Pageable pageable) {
+        return subjectService.getSubjects(name, coursePublicId, pageable);
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)

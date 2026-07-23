@@ -1,0 +1,39 @@
+<div class="sidebar-wrapper" data-slot="sidebar-wrapper">
+  <aside class="sidebar" data-slot="sidebar">
+    <div class="sidebar-brand">
+      @if (user(); as current) {
+        <span class="brand-mark">{{ current.name.charAt(0).toUpperCase() }}</span>
+        <div>
+          <strong>{{ current.name }}</strong>
+          <small>{{ current.role === 'ADMIN' ? 'Administrador' : 'Aluno' }}</small>
+        </div>
+      }
+    </div>
+
+    <nav class="sidebar-nav">
+      @for (item of navItems(); track item.path) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <lucide-icon class="nav-icon" [img]="item.icon" [size]="16" [strokeWidth]="2"></lucide-icon>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar-footer">
+      <button type="button" class="logout-btn" (click)="logout()">
+        <lucide-icon class="logout-icon" [img]="logOutIcon" [size]="16" [strokeWidth]="2"></lucide-icon>
+        Sair
+      </button>
+    </div>
+  </aside>
+
+  <main class="sidebar-inset" data-slot="sidebar-inset">
+    <div class="inset-content">
+      <router-outlet />
+    </div>
+  </main>
+</div>

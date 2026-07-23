@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,6 +12,7 @@ import static org.mockito.Mockito.when;
 import br.com.techne.lyceum.academic.domain.User;
 import br.com.techne.lyceum.academic.domain.UserRole;
 import br.com.techne.lyceum.academic.dto.CreateUserRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateUserRequest;
 import br.com.techne.lyceum.academic.dto.UserDTO;
 import br.com.techne.lyceum.academic.repository.UserRepository;
@@ -28,6 +30,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -78,25 +84,29 @@ class UserServiceImplTest {
         authenticateAs(mockedAdmin());
         User user1 = mockedUser(1L, "student1", "student1@example.com", UserRole.STUDENT);
         User user2 = mockedUser(2L, "student2", "student2@example.com", UserRole.STUDENT);
-        when(userRepository.findAll()).thenReturn(List.of(user1, user2));
+        Pageable pageable = PageRequest.of(0, 10);
+        when(userRepository.findAll(any(Specification.class), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(user1, user2), pageable, 2));
 
-        List<UserDTO> result = userService.getUsers();
+        PageResponse<UserDTO> result = userService.getUsers(null, null, pageable);
 
-        assertEquals(2, result.size());
-        assertEquals(user1.getPublicId(), result.get(0).publicId());
-        assertEquals(UserRole.STUDENT, result.get(0).role());
-        verify(userRepository).findAll();
+        assertEquals(2, result.content().size());
+        assertEquals(user1.getPublicId(), result.content().get(0).publicId());
+        assertEquals(UserRole.STUDENT, result.content().get(0).role());
+        verify(userRepository).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
     void getUsers_whenStudent_throwsForbidden() {
         authenticateAs(mockedUser());
+        Pageable pageable = PageRequest.of(0, 10);
 
         ForbiddenException ex =
-                assertThrows(ForbiddenException.class, () -> userService.getUsers());
+                assertThrows(
+                        ForbiddenException.class, () -> userService.getUsers(null, null, pageable));
 
         assertEquals("ACCESS_DENIED", ex.getCode());
-        verify(userRepository, never()).findAll();
+        verify(userRepository, never()).findAll(any(Specification.class), eq(pageable));
     }
 
     @Test
@@ -253,7 +263,7 @@ class UserServiceImplTest {
 
         ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(captor.capture());
-        verify(userRepository, never()).delete(any());
+        verify(userRepository, never()).delete(any(User.class));
         assertNotNull(captor.getValue().getDeletedAt());
     }
 

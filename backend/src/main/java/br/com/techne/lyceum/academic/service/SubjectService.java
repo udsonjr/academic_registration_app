@@ -1,14 +1,15 @@
 package br.com.techne.lyceum.academic.service;
 
 import br.com.techne.lyceum.academic.dto.CreateSubjectRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.SubjectDTO;
 import br.com.techne.lyceum.academic.dto.UpdateSubjectRequest;
-import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.Pageable;
 
 public interface SubjectService {
 
-    List<SubjectDTO> getSubjects();
+    PageResponse<SubjectDTO> getSubjects(String name, UUID coursePublicId, Pageable pageable);
 
     SubjectDTO getSubjectByPublicId(UUID publicId);
 

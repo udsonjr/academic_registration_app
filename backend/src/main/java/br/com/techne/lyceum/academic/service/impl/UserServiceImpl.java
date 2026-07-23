@@ -3,16 +3,18 @@ package br.com.techne.lyceum.academic.service.impl;
 import br.com.techne.lyceum.academic.domain.User;
 import br.com.techne.lyceum.academic.domain.UserRole;
 import br.com.techne.lyceum.academic.dto.CreateUserRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateUserRequest;
 import br.com.techne.lyceum.academic.dto.UserDTO;
 import br.com.techne.lyceum.academic.repository.UserRepository;
+import br.com.techne.lyceum.academic.repository.spec.UserSpecs;
 import br.com.techne.lyceum.academic.security.SecurityUtils;
 import br.com.techne.lyceum.academic.service.UserService;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,9 +28,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UserDTO> getUsers() {
+    public PageResponse<UserDTO> getUsers(String q, UserRole role, Pageable pageable) {
         SecurityUtils.requireAdmin();
-        return userRepository.findAll().stream().map(UserDTO::from).toList();
+        return PageResponse.from(
+                userRepository.findAll(UserSpecs.withFilters(q, role), pageable), UserDTO::from);
     }
 
     @Override

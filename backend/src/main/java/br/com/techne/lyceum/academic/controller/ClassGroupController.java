@@ -2,15 +2,18 @@ package br.com.techne.lyceum.academic.controller;
 
 import br.com.techne.lyceum.academic.dto.ClassGroupDTO;
 import br.com.techne.lyceum.academic.dto.CreateClassGroupRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateClassGroupRequest;
 import br.com.techne.lyceum.academic.service.ClassGroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,9 +38,20 @@ public class ClassGroupController {
     private final ClassGroupService classGroupService;
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
-    @Operation(summary = "List class groups", description = "Returns all registered class groups")
-    public List<ClassGroupDTO> getClassGroups() {
-        return classGroupService.getClassGroups();
+    @Operation(
+            summary = "List class groups",
+            description =
+                    "Returns paginated class groups with optional filters (name, openForEnrollment,"
+                            + " subjectPublicId, coursePublicId) and sort (default: createdAt desc)")
+    public PageResponse<ClassGroupDTO> getClassGroups(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Boolean openForEnrollment,
+            @RequestParam(required = false) UUID subjectPublicId,
+            @RequestParam(required = false) UUID coursePublicId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+                    Pageable pageable) {
+        return classGroupService.getClassGroups(
+                name, openForEnrollment, subjectPublicId, coursePublicId, pageable);
     }
 
     @GetMapping(value = "/{publicId}", produces = MediaType.APPLICATION_JSON_VALUE)

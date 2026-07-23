@@ -3,14 +3,16 @@ package br.com.techne.lyceum.academic.service.impl;
 import br.com.techne.lyceum.academic.domain.Course;
 import br.com.techne.lyceum.academic.dto.CourseDTO;
 import br.com.techne.lyceum.academic.dto.CreateCourseRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateCourseRequest;
 import br.com.techne.lyceum.academic.repository.CourseRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
+import br.com.techne.lyceum.academic.repository.spec.CourseSpecs;
 import br.com.techne.lyceum.academic.service.CourseService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,8 +25,10 @@ public class CourseServiceImpl implements CourseService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CourseDTO> getCourses() {
-        return courseRepository.findAll().stream().map(CourseDTO::from).toList();
+    public PageResponse<CourseDTO> getCourses(String name, Boolean active, Pageable pageable) {
+        return PageResponse.from(
+                courseRepository.findAll(CourseSpecs.withFilters(name, active), pageable),
+                CourseDTO::from);
     }
 
     @Override

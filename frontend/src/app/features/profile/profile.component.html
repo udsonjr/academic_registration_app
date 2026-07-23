@@ -1,0 +1,43 @@
+<div class="page-header">
+  <div>
+    <h1>Perfil</h1>
+    <p>Gerencie suas informações pessoais.</p>
+  </div>
+</div>
+
+<form class="form-grid" style="max-width: 420px" [formGroup]="form" (ngSubmit)="save()">
+  <div class="form-field">
+    <label for="name">Nome</label>
+    <input id="name" type="text" formControlName="name" />
+    @if (form.controls.name.touched && form.controls.name.invalid) {
+      <p class="field-error">Informe um nome válido.</p>
+    }
+  </div>
+  <div class="form-field">
+    <label for="email">E-mail</label>
+    <input id="email" type="email" formControlName="email" />
+    @if (form.controls.email.touched && form.controls.email.invalid) {
+      <p class="field-error">Informe um e-mail válido.</p>
+    }
+  </div>
+  <div class="form-field">
+    <label>Papel</label>
+    <input type="text" [value]="roleText" disabled />
+  </div>
+  <div class="form-actions" style="justify-content: space-between">
+    <button type="button" class="btn btn-danger" (click)="openDelete()">Excluir conta</button>
+    <button type="submit" class="btn" [disabled]="loading">
+      {{ loading ? 'Salvando...' : 'Salvar' }}
+    </button>
+  </div>
+</form>
+
+<app-confirm-modal
+  [open]="confirmDeleteOpen"
+  title="Excluir conta"
+  message="Esta ação é irreversível. Deseja excluir sua conta?"
+  confirmLabel="Excluir"
+  [loading]="deleting"
+  (confirm)="confirmDelete()"
+  (cancel)="closeDelete()"
+/>

@@ -1,0 +1,272 @@
+<div class="page-header">
+  <div>
+    <h1>{{ pageTitle }}</h1>
+    <p>Acompanhe status e gerencie matrículas.</p>
+  </div>
+  <button type="button" class="btn" (click)="openCreate()">Nova matrícula</button>
+</div>
+
+<form class="filters-bar" [formGroup]="filters" (ngSubmit)="applyFilters()">
+  <div class="filters-fields">
+    @if (isAdmin) {
+      <div class="form-field">
+        <label>Aluno</label>
+        <select formControlName="userPublicId">
+          <option value="">Todos</option>
+          @for (user of filterUsers; track user.publicId) {
+            <option [value]="user.publicId">{{ user.name }} ({{ user.email }})</option>
+          }
+        </select>
+      </div>
+    }
+    <div class="form-field">
+      <label>Curso</label>
+      <select formControlName="coursePublicId" (change)="onFilterCourseChange()">
+        <option value="">Todos</option>
+        @for (course of filterCourses; track course.publicId) {
+          <option [value]="course.publicId">{{ course.name }}</option>
+        }
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Disciplina</label>
+      <select formControlName="subjectPublicId" (change)="onFilterSubjectChange()">
+        <option value="">Todas</option>
+        @for (subject of filterSubjects; track subject.publicId) {
+          <option [value]="subject.publicId">
+            {{ subject.name }} ({{ subject.course.name }})
+          </option>
+        }
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Turma</label>
+      <select formControlName="classGroupPublicId">
+        <option value="">Todas</option>
+        @for (group of filterClassGroups; track group.publicId) {
+          <option [value]="group.publicId">
+            {{ group.name }} ({{ group.subject.name }})
+          </option>
+        }
+      </select>
+    </div>
+    <div class="form-field narrow">
+      <label>Status</label>
+      <select formControlName="status">
+        <option value="">Todos</option>
+        <option value="PENDING">Pendente</option>
+        <option value="CONFIRMED">Confirmada</option>
+        <option value="CANCELLED">Cancelada</option>
+      </select>
+    </div>
+    <div class="form-field narrow">
+      <label>Ordenar</label>
+      <select formControlName="sort">
+        <option value="createdAt,desc">Mais recentes</option>
+        <option value="createdAt,asc">Mais antigas</option>
+        <option value="status,asc">Status (A-Z)</option>
+        <option value="status,desc">Status (Z-A)</option>
+      </select>
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm">Filtrar</button>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar</button>
+  </div>
+</form>
+
+@if (loading) {
+  <p class="empty-state">Carregando...</p>
+} @else if (enrollments.length === 0) {
+  <p class="empty-state">Nenhuma matrícula encontrada.</p>
+} @else {
+  <div class="table-wrap">
+    <table class="data-table">
+      <colgroup>
+        @if (isAdmin) {
+          <col class="col-2" />
+          <col class="col-2" />
+          <col class="col-2" />
+          <col class="col-1" />
+          <col class="col-2" />
+          <col class="col-1" />
+        } @else {
+          <col class="col-3" />
+          <col class="col-3" />
+          <col class="col-1" />
+          <col class="col-2" />
+          <col class="col-1" />
+        }
+      </colgroup>
+      <thead>
+        <tr>
+          @if (isAdmin) {
+            <th>Aluno</th>
+          }
+          <th>Turma</th>
+          <th>Disciplina</th>
+          <th>Status</th>
+          <th>Criada em</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of enrollments; track item.publicId) {
+          <tr>
+            @if (isAdmin) {
+              <td class="cell-ellipsis" [title]="item.user.name">{{ item.user.name }}</td>
+            }
+            <td class="cell-ellipsis" [title]="item.classGroup.name">{{ item.classGroup.name }}</td>
+            <td class="cell-ellipsis" [title]="item.classGroup.subject.name">
+              {{ item.classGroup.subject.name }}
+            </td>
+            <td>
+              <span [class]="statusClass(item.status)">{{ statusLabel(item.status) }}</span>
+            </td>
+            <td class="cell-ellipsis">{{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+            <td>
+              <div class="row-actions">
+                @if (item.status !== 'CANCELLED') {
+                  <button
+                    type="button"
+                    class="btn btn-icon btn-danger"
+                    title="Cancelar matrícula"
+                    aria-label="Cancelar matrícula"
+                    (click)="requestCancel(item)"
+                  >
+                    <lucide-icon [img]="cancelIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                  </button>
+                }
+                @if (isAdmin && item.status === 'PENDING') {
+                  <button
+                    type="button"
+                    class="btn btn-icon btn-success"
+                    title="Aprovar matrícula"
+                    aria-label="Aprovar matrícula"
+                    (click)="requestConfirm(item)"
+                  >
+                    <lucide-icon [img]="approveIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                  </button>
+                }
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <app-pager
+    [page]="page"
+    [totalPages]="totalPages"
+    [totalElements]="totalElements"
+    (pageChange)="onPageChange($event)"
+  />
+}
+
+@if (createOpen) {
+  <div class="modal-backdrop" (click)="closeCreate()">
+    <div class="modal modal-wide" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <h3>Nova matrícula</h3>
+      <p>
+        @if (createStep === 0) {
+          Selecione o aluno
+        } @else if (createStep === 1) {
+          Selecione o curso
+        } @else if (createStep === 2) {
+          Selecione a disciplina
+        } @else {
+          Selecione a turma
+        }
+      </p>
+
+      <form class="form-grid" [formGroup]="createForm" (ngSubmit)="submitCreate()">
+        @if (createStep === 0) {
+          <div class="form-field">
+            <label for="userPublicId">Aluno</label>
+            <select id="userPublicId" formControlName="userPublicId">
+              <option value="">Selecione...</option>
+              @for (user of users; track user.publicId) {
+                <option [value]="user.publicId">{{ user.name }} ({{ user.email }})</option>
+              }
+            </select>
+          </div>
+        }
+
+        @if (createStep === 1) {
+          <div class="form-field">
+            <label for="coursePublicId">Curso</label>
+            <select
+              id="coursePublicId"
+              formControlName="coursePublicId"
+              (change)="onCourseChange()"
+            >
+              <option value="">Selecione...</option>
+              @for (course of courses; track course.publicId) {
+                <option [value]="course.publicId">{{ course.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        @if (createStep === 2) {
+          <div class="form-field">
+            <label for="subjectPublicId">Disciplina</label>
+            <select
+              id="subjectPublicId"
+              formControlName="subjectPublicId"
+              (change)="onSubjectChange()"
+            >
+              <option value="">Selecione...</option>
+              @for (subject of subjects; track subject.publicId) {
+                <option [value]="subject.publicId">{{ subject.name }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        @if (createStep === 3) {
+          <div class="form-field">
+            <label for="classGroupPublicId">Turma</label>
+            <select id="classGroupPublicId" formControlName="classGroupPublicId">
+              <option value="">Selecione...</option>
+              @for (group of classGroups; track group.publicId) {
+                <option [value]="group.publicId">
+                  {{ group.name }} ({{ group.enrolledStudents }}/{{ group.vacancyLimit }})
+                </option>
+              }
+            </select>
+          </div>
+        }
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" (click)="closeCreate()" [disabled]="createLoading">
+            Fechar
+          </button>
+          @if (createStep > (isAdmin ? 0 : 1)) {
+            <button type="button" class="btn btn-ghost" (click)="prevCreateStep()" [disabled]="createLoading">
+              Voltar
+            </button>
+          }
+          @if (createStep < 3) {
+            <button type="button" class="btn" (click)="nextCreateStep()">Próximo</button>
+          } @else {
+            <button type="submit" class="btn" [disabled]="createLoading">
+              {{ createLoading ? 'Salvando...' : 'Confirmar matrícula' }}
+            </button>
+          }
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<app-confirm-modal
+  [open]="confirmOpen"
+  [title]="confirmTitle"
+  [message]="confirmMessage"
+  [confirmLabel]="confirmLabel"
+  [loading]="actionLoading"
+  (confirm)="executeConfirm()"
+  (cancel)="closeConfirm()"
+/>

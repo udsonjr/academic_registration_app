@@ -6,17 +6,19 @@ import br.com.techne.lyceum.academic.domain.EnrollmentStatus;
 import br.com.techne.lyceum.academic.domain.User;
 import br.com.techne.lyceum.academic.dto.CreateEnrollmentRequest;
 import br.com.techne.lyceum.academic.dto.EnrollmentDTO;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.EnrollmentRepository;
 import br.com.techne.lyceum.academic.repository.UserRepository;
+import br.com.techne.lyceum.academic.repository.spec.EnrollmentSpecs;
 import br.com.techne.lyceum.academic.security.SecurityUtils;
 import br.com.techne.lyceum.academic.service.EnrollmentService;
 import br.com.techne.lyceum.academic.shared.exception.ConflictException;
 import br.com.techne.lyceum.academic.shared.exception.ForbiddenException;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,11 +35,33 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<EnrollmentDTO> getEnrollments() {
+    public PageResponse<EnrollmentDTO> getEnrollments(
+            EnrollmentStatus status,
+            UUID coursePublicId,
+            UUID subjectPublicId,
+            UUID classGroupPublicId,
+            UUID userPublicId,
+            Pageable pageable) {
+        UUID effectiveUserPublicId = userPublicId;
         if (!SecurityUtils.isAdmin()) {
-            return getEnrollmentsByUser(SecurityUtils.currentUserPublicId());
+            UUID self = SecurityUtils.currentUserPublicId();
+            if (userPublicId != null && !userPublicId.equals(self)) {
+                throw new ForbiddenException(
+                        "ACCESS_DENIED", "Students can only view their own enrollments");
+            }
+            effectiveUserPublicId = self;
         }
-        return enrollmentRepository.findAll().stream().map(EnrollmentDTO::from).toList();
+
+        return PageResponse.from(
+                enrollmentRepository.findAll(
+                        EnrollmentSpecs.withFilters(
+                                status,
+                                coursePublicId,
+                                subjectPublicId,
+                                classGroupPublicId,
+                                effectiveUserPublicId),
+                        pageable),
+                EnrollmentDTO::from);
     }
 
     @Override
@@ -129,29 +153,5 @@ public class EnrollmentServiceImpl implements EnrollmentService {
 
         enrollment.setStatus(EnrollmentStatus.CANCELLED);
         return EnrollmentDTO.from(enrollmentRepository.save(enrollment));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<EnrollmentDTO> getEnrollmentsByUser(UUID userPublicId) {
-        if (!SecurityUtils.isAdmin() && !SecurityUtils.currentUserPublicId().equals(userPublicId)) {
-            throw new ForbiddenException(
-                    "ACCESS_DENIED", "Students can only view their own enrollments");
-        }
-
-        User user = userRepository.getByPublicIdOrThrow(userPublicId);
-        return enrollmentRepository.findAllByUserId(user.getId()).stream()
-                .map(EnrollmentDTO::from)
-                .toList();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<EnrollmentDTO> getEnrollmentsByClassGroup(UUID classGroupPublicId) {
-        SecurityUtils.requireAdmin();
-        ClassGroup classGroup = classGroupRepository.getByPublicIdOrThrow(classGroupPublicId);
-        return enrollmentRepository.findAllByClassGroupId(classGroup.getId()).stream()
-                .map(EnrollmentDTO::from)
-                .toList();
     }
 }

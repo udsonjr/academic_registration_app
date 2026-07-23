@@ -1,0 +1,154 @@
+<div class="page-header">
+  <div>
+    <h1>Usuários</h1>
+    <p>Gerencie alunos e administradores.</p>
+  </div>
+  <button type="button" class="btn" (click)="openCreate()">Novo usuário</button>
+</div>
+
+<form class="filters-bar" [formGroup]="filters" (ngSubmit)="applyFilters()">
+  <div class="filters-fields">
+    <div class="form-field">
+      <label>Busca</label>
+      <input type="text" formControlName="q" placeholder="Nome ou e-mail" />
+    </div>
+    <div class="form-field narrow">
+      <label>Papel</label>
+      <select formControlName="role">
+        <option value="">Todos</option>
+        <option value="STUDENT">Aluno</option>
+        <option value="ADMIN">Administrador</option>
+      </select>
+    </div>
+  </div>
+  <div class="filter-actions">
+    <button type="submit" class="btn btn-sm">Filtrar</button>
+    <button type="button" class="btn btn-ghost btn-sm" (click)="clearFilters()">Limpar</button>
+  </div>
+</form>
+
+@if (loading) {
+  <p class="empty-state">Carregando...</p>
+} @else if (users.length === 0) {
+  <p class="empty-state">Nenhum usuário encontrado.</p>
+} @else {
+  <div class="table-wrap">
+    <table class="data-table">
+      <colgroup>
+        <col class="col-3" />
+        <col class="col-4" />
+        <col class="col-2" />
+        <col class="col-1" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>E-mail</th>
+          <th>Papel</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (user of users; track user.publicId) {
+          <tr>
+            <td class="cell-ellipsis" [title]="user.name">{{ user.name }}</td>
+            <td class="cell-ellipsis" [title]="user.email">{{ user.email }}</td>
+            <td class="cell-ellipsis">{{ roleLabel(user.role) }}</td>
+            <td>
+              <div class="row-actions">
+                <button
+                  type="button"
+                  class="btn btn-icon btn-ghost"
+                  title="Editar"
+                  aria-label="Editar"
+                  (click)="openEdit(user)"
+                >
+                  <lucide-icon [img]="pencilIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-icon btn-danger"
+                  title="Excluir"
+                  aria-label="Excluir"
+                  (click)="requestDelete(user)"
+                >
+                  <lucide-icon [img]="trashIcon" [size]="15" [strokeWidth]="2"></lucide-icon>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <app-pager
+    [page]="page"
+    [totalPages]="totalPages"
+    [totalElements]="totalElements"
+    (pageChange)="onPageChange($event)"
+  />
+}
+
+@if (formOpen) {
+  <div class="modal-backdrop" (click)="closeForm()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <h3>{{ editing ? 'Editar usuário' : 'Novo usuário' }}</h3>
+      <form class="form-grid" [formGroup]="form" (ngSubmit)="save()">
+        <div class="form-field">
+          <label>Nome</label>
+          <input type="text" formControlName="name" />
+          @if (form.controls.name.touched && form.controls.name.invalid) {
+            <p class="field-error">O nome é obrigatório.</p>
+          }
+        </div>
+        <div class="form-field">
+          <label>E-mail</label>
+          <input type="email" formControlName="email" />
+          @if (form.controls.email.touched && form.controls.email.invalid) {
+            <p class="field-error">Informe um e-mail válido.</p>
+          }
+        </div>
+        @if (!editing) {
+          <div class="form-field">
+            <label>Senha</label>
+            <input type="password" formControlName="password" />
+            <ul class="password-rules">
+              <li>Mínimo de <strong>6 caracteres</strong></li>
+              <li>Deve coincidir com a confirmação</li>
+            </ul>
+            @if (form.controls.password.touched && form.controls.password.invalid) {
+              <p class="field-error">Senha obrigatória com no mínimo 6 caracteres.</p>
+            }
+          </div>
+          <div class="form-field">
+            <label>Confirmar senha</label>
+            <input type="password" formControlName="confirmPassword" />
+          </div>
+          <div class="form-field">
+            <label>Papel</label>
+            <select formControlName="role">
+              <option value="STUDENT">Aluno</option>
+              <option value="ADMIN">Administrador</option>
+            </select>
+          </div>
+        }
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" (click)="closeForm()">Cancelar</button>
+          <button type="submit" class="btn" [disabled]="saving">
+            {{ saving ? 'Salvando...' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<app-confirm-modal
+  [open]="!!deleteTarget"
+  title="Excluir usuário"
+  message="Deseja excluir este usuário?"
+  confirmLabel="Excluir"
+  [loading]="deleting"
+  (confirm)="confirmDelete()"
+  (cancel)="closeDelete()"
+/>

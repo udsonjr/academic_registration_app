@@ -4,14 +4,16 @@ import br.com.techne.lyceum.academic.domain.ClassGroup;
 import br.com.techne.lyceum.academic.domain.Subject;
 import br.com.techne.lyceum.academic.dto.ClassGroupDTO;
 import br.com.techne.lyceum.academic.dto.CreateClassGroupRequest;
+import br.com.techne.lyceum.academic.dto.PageResponse;
 import br.com.techne.lyceum.academic.dto.UpdateClassGroupRequest;
 import br.com.techne.lyceum.academic.repository.ClassGroupRepository;
 import br.com.techne.lyceum.academic.repository.SubjectRepository;
+import br.com.techne.lyceum.academic.repository.spec.ClassGroupSpecs;
 import br.com.techne.lyceum.academic.service.ClassGroupService;
 import br.com.techne.lyceum.academic.shared.exception.BadRequestException;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,8 +26,18 @@ public class ClassGroupServiceImpl implements ClassGroupService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ClassGroupDTO> getClassGroups() {
-        return classGroupRepository.findAll().stream().map(ClassGroupDTO::from).toList();
+    public PageResponse<ClassGroupDTO> getClassGroups(
+            String name,
+            Boolean openForEnrollment,
+            UUID subjectPublicId,
+            UUID coursePublicId,
+            Pageable pageable) {
+        return PageResponse.from(
+                classGroupRepository.findAll(
+                        ClassGroupSpecs.withFilters(
+                                name, openForEnrollment, subjectPublicId, coursePublicId),
+                        pageable),
+                ClassGroupDTO::from);
     }
 
     @Override
