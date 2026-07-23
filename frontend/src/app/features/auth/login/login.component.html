@@ -13,7 +13,27 @@
       </div>
       <div class="form-field">
         <label for="password">Senha</label>
-        <input id="password" type="password" formControlName="password" autocomplete="current-password" />
+        <div class="password-input">
+          <input
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="password-toggle"
+            [title]="showPassword ? 'Ocultar senha' : 'Exibir senha'"
+            [attr.aria-label]="showPassword ? 'Ocultar senha' : 'Exibir senha'"
+            (click)="showPassword = !showPassword"
+          >
+            <lucide-icon
+              [img]="showPassword ? eyeOffIcon : eyeIcon"
+              [size]="16"
+              [strokeWidth]="2"
+            ></lucide-icon>
+          </button>
+        </div>
         @if (form.controls.password.touched && form.controls.password.invalid) {
           <p class="field-error">A senha é obrigatória.</p>
         }

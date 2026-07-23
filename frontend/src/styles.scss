@@ -402,6 +402,38 @@ table.data-table tr:last-child td {
   font-weight: 600;
 }
 
+.password-input {
+  position: relative;
+  display: grid;
+}
+
+.password-input input {
+  padding-right: 2.5rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: var(--foreground);
+  background: var(--muted);
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;

@@ -129,13 +129,25 @@
           <textarea formControlName="description"></textarea>
         </div>
         <div class="form-field">
+          <label>Curso</label>
+          <select formControlName="coursePublicId" (change)="onFormCourseChange()">
+            <option value="">Selecione...</option>
+            @for (course of courses; track course.publicId) {
+              <option [value]="course.publicId">{{ course.name }}</option>
+            }
+          </select>
+          @if (form.controls.coursePublicId.touched && form.controls.coursePublicId.invalid) {
+            <p class="field-error">Selecione um curso.</p>
+          }
+        </div>
+        <div class="form-field">
           <label>Disciplina</label>
           <select formControlName="subjectPublicId">
-            <option value="">Selecione...</option>
-            @for (subject of subjects; track subject.publicId) {
-              <option [value]="subject.publicId">
-                {{ subject.name }} ({{ subject.course.name }})
-              </option>
+            <option value="">
+              {{ form.controls.coursePublicId.value ? 'Selecione...' : 'Selecione um curso primeiro' }}
+            </option>
+            @for (subject of formSubjects; track subject.publicId) {
+              <option [value]="subject.publicId">{{ subject.name }}</option>
             }
           </select>
           @if (form.controls.subjectPublicId.touched && form.controls.subjectPublicId.invalid) {

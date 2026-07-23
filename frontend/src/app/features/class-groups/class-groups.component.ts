@@ -28,6 +28,7 @@ export class ClassGroupsComponent implements OnInit {
 
   classGroups: ClassGroup[] = [];
   subjects: Subject[] = [];
+  formSubjects: Subject[] = [];
   courses: Course[] = [];
   page = 0;
   size = 10;
@@ -50,6 +51,7 @@ export class ClassGroupsComponent implements OnInit {
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(150)]],
     description: ['', [Validators.maxLength(500)]],
+    coursePublicId: ['', Validators.required],
     subjectPublicId: ['', Validators.required],
     vacancyLimit: [40, [Validators.required, Validators.min(1)]],
     openForEnrollment: [true],
@@ -73,6 +75,23 @@ export class ClassGroupsComponent implements OnInit {
       })
       .subscribe({
         next: (res) => (this.subjects = res.content),
+        error: (err) => this.snackbar.error(extractApiError(err)),
+      });
+  }
+
+  loadFormSubjects(coursePublicId?: string): void {
+    if (!coursePublicId) {
+      this.formSubjects = [];
+      return;
+    }
+    this.subjectService
+      .list({
+        page: 0,
+        size: 100,
+        coursePublicId,
+      })
+      .subscribe({
+        next: (res) => (this.formSubjects = res.content),
         error: (err) => this.snackbar.error(extractApiError(err)),
       });
   }
@@ -128,6 +147,22 @@ export class ClassGroupsComponent implements OnInit {
     this.loadSubjects(coursePublicId || undefined);
   }
 
+  onFormCourseChange(): void {
+    this.form.patchValue({ subjectPublicId: '' });
+    const coursePublicId = this.form.controls.coursePublicId.value;
+    this.syncSubjectControl(!!coursePublicId);
+    this.loadFormSubjects(coursePublicId || undefined);
+  }
+
+  private syncSubjectControl(enabled: boolean): void {
+    const control = this.form.controls.subjectPublicId;
+    if (enabled) {
+      control.enable({ emitEvent: false });
+    } else {
+      control.disable({ emitEvent: false });
+    }
+  }
+
   onPageChange(page: number): void {
     this.page = page;
     this.load();
@@ -135,13 +170,16 @@ export class ClassGroupsComponent implements OnInit {
 
   openCreate(): void {
     this.editing = null;
+    this.formSubjects = [];
     this.form.reset({
       name: '',
       description: '',
+      coursePublicId: '',
       subjectPublicId: '',
       vacancyLimit: 40,
       openForEnrollment: true,
     });
+    this.syncSubjectControl(false);
     this.formOpen = true;
   }
 
@@ -150,10 +188,13 @@ export class ClassGroupsComponent implements OnInit {
     this.form.reset({
       name: group.name,
       description: group.description ?? '',
+      coursePublicId: group.subject.course.publicId,
       subjectPublicId: group.subject.publicId,
       vacancyLimit: group.vacancyLimit,
       openForEnrollment: group.openForEnrollment,
     });
+    this.syncSubjectControl(true);
+    this.loadFormSubjects(group.subject.course.publicId);
     this.formOpen = true;
   }
 
@@ -166,14 +207,21 @@ export class ClassGroupsComponent implements OnInit {
   save(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
-      this.snackbar.error('Preencha nome, disciplina e limite de vagas. A descrição é opcional.');
+      this.snackbar.error('Preencha nome, curso, disciplina e limite de vagas. A descrição é opcional.');
       return;
     }
     const value = this.form.getRawValue();
+    const payload = {
+      name: value.name,
+      description: value.description,
+      subjectPublicId: value.subjectPublicId,
+      vacancyLimit: value.vacancyLimit,
+      openForEnrollment: value.openForEnrollment,
+    };
     this.saving = true;
     const req$ = this.editing
-      ? this.classGroupService.update(this.editing.publicId, value)
-      : this.classGroupService.create(value);
+      ? this.classGroupService.update(this.editing.publicId, payload)
+      : this.classGroupService.create(payload);
     req$.subscribe({
       next: () => {
         this.saving = false;
