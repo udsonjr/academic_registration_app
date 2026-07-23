@@ -248,13 +248,11 @@ As regras de vaga/matrícula ficam principalmente nos unitários de serviço; a 
 
 ## 11. Limitações conhecidas
 
-- **Concorrência na confirmação de vagas** — sem lock pessimista/otimista dedicado; a constraint SQL mitiga inconsistência extrema, mas pode gerar erro de constraint em race em vez de `CLASS_GROUP_FULL` amigável.
+- **Concorrência na confirmação de vagas** — a confirmação não usa lock pessimista/otimista dedicado. Em teoria, confirmações simultâneas na mesma turma poderiam disputar a última vaga; na prática o risco é baixo neste projeto (poucos operadores confirmando ao mesmo tempo). 
 - **Contador desnormalizado** — `enrolled_students` pode divergir se dados forem alterados fora do fluxo de serviço.
 - **Senhas do seed** — todas `admin` (apenas para demo local).
 - **Sem E2E de UI** — frontend tem specs unitárias; não há Cypress/Playwright.
-- **Integração depende de Docker** — Testcontainers precisa do daemon ativo.
 - **Sem refresh token / revogação** — JWT até expirar.
-- **Um único banco Postgres** — sem multi-tenancy nem fila assíncrona.
 
 ---
 
@@ -271,7 +269,7 @@ Onde foi usada:
 ### O processo com uso de IA
 
 O uso de IA em trechos importantes do código foi tratado com a seguinte sistemática:  
-Criação de um plano de implementação (com o Cursor no modo `Plan`), que era revisado até chegar em um resultado satisfatório. Implementação do plano. Finalmente, após a implementação, o código era commitado em um PR no GitHub, onde a pipeline rodava `build + lint + tests` e seus arquivos eram revisados novamente para garantir a segurança da aplicação.
+Criação de um plano de implementação (com o Cursor no modo `Plan`), que era revisado até chegar em um resultado satisfatório. Implementação do plano. Finalmente, após a implementação, o código era commitado em um PR no GitHub, onde a pipeline rodava `build + lint + tests` e seus arquivos eram revisados novamente para garantir a segurança da aplicação. Muitas vezes eram feitos commits extras para melhorar ou consertar algum ponto.
 
 ### O que foi revisado manualmente
 
