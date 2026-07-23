@@ -39,5 +39,5 @@ jobs:
       - name: Checkstyle (lint)
         run: mvn -B checkstyle:check
 
-      - name: Unit tests
+      - name: Unit and integration tests
         run: mvn -B test
