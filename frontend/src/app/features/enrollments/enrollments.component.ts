@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, OnInit, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CircleX, CircleCheck, LucideAngularModule, Check } from 'lucide-angular';
+import { CircleX, CircleCheck, LucideAngularModule } from 'lucide-angular';
 import { AuthService } from '../../core/auth.service';
 import {
   ClassGroup,
